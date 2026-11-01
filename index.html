@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="author" content="Dave Tuggle">
 <meta name="description" content="Live San Juan River gauge at Pagosa Springs, CO, with flood stages, the NWS forecast and an estimated flood-width map.">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
@@ -77,6 +78,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 #spark{display:block;width:100%;height:auto}
 .foot{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
 .foot a{color:inherit}
+.byline{font-size:14px;font-weight:600;color:var(--fg)}
 .mono{font-family:var(--mono)}
 
 .fm-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
@@ -182,6 +184,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
   </section>
 
   <div class="foot">
+    <div class="byline">Created by Dave Tuggle</div>
     <div>Readings: <a href="https://waterdata.usgs.gov/monitoring-location/09342500/" target="_blank" rel="noopener">USGS 09342500</a> (15-minute, provisional). Flood stages, crests and forecast: <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">NWS PSPC2</a>.</div>
     <div id="footNote"></div>
   </div>
