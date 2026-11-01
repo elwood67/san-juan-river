@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 16px}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:2px 0 0;text-wrap:balance}
-.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px;border:1.5px solid currentColor;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px;border:1.5px solid currentColor;max-width:100%}
 .chip::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
 .readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
@@ -104,6 +104,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .fm-legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-top:10px}
 .fm-legend i{display:inline-block;width:18px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:6px}
 .fm-whatif{flex-basis:100%;color:var(--major);font-weight:600}
+.map-warn{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:10px 14px;font-size:14px;line-height:1.5;margin-bottom:10px}
 .fm-notes{font-size:12.5px;color:var(--muted);margin:10px 0 0;padding-left:18px;display:grid;gap:3px;max-width:90ch}
 @media (max-width:560px){.readout{grid-template-columns:1fr 1fr}.stat.time{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -111,9 +112,10 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 
 <div class="wrap">
   <aside class="official" aria-label="Official flood information">
-    <b>Unofficial page, built from public USGS and NWS data.</b> If you are in the Pagosa Springs area, follow the Town of Pagosa Springs and Archuleta County. As of Nov 1, 2026, mandatory evacuations were in effect for low-lying areas along the San Juan, Rio Blanco, Navajo and Piedra rivers. <b>In danger, call 911.</b>
+    <b>Unofficial page, built from public USGS and NWS data. Do not use it to decide whether to stay or leave.</b> If you are in the Pagosa Springs area, follow the Town of Pagosa Springs and Archuleta County. As of Nov 1, 2026, mandatory evacuations were in effect for low-lying areas along the San Juan, Rio Blanco, Navajo and Piedra rivers. <b>In danger, call 911.</b>
     Alerts: text <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town) or <span class="mono">81147</span> to <span class="mono">888777</span> (County).
     Official river forecast: <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a>.
+    Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.
   </aside>
   <header>
     <div>
@@ -158,6 +160,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
       <div class="fm-chips" id="fmChips"></div>
       <div class="fm-stats" id="fmStats">Loading map…</div>
     </div>
+    <div class="map-warn" role="note"><b>Do not use this map to decide whether to evacuate.</b> It is a rough computer estimate, not an official flood map. It can be off by a foot or more, and a building shown as not reached can still flood. Follow Town and County evacuation orders.</div>
     <div class="fm-wrap">
       <canvas id="fmap" aria-label="Map of the river corridor with estimated flood extent"></canvas>
       <div class="fm-zoom">
@@ -172,7 +175,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
       <span><i style="background:#9fd3ea"></i>Water just reaching</span>
       <span><i style="background:#1f5f99"></i>Deeper water</span>
       <span><i style="background:#e0533d"></i>Building with water at its walls</span>
-      <span><i style="background:#e9ebe8;border:1.5px solid #26303a"></i>Building staying dry</span>
+      <span><i style="background:#e9ebe8;border:1.5px solid #26303a"></i>Building not reached in this estimate</span>
     </div>
     <ul class="fm-notes">
       <li>A model, not an official flood map: it raises the water the same amount along the whole reach and ignores bridges, debris and how fast the water moves.</li>
@@ -326,10 +329,15 @@ function render() {
     const c = n ? category(L.stage, cats) : null;
     const chip = $('chip');
     if (!n) { chip.textContent = 'Flood stages unavailable'; chip.style.color = 'var(--muted)'; }
-    else if (!c) {
-      const next = cats.action ? ' · ' + ft2(cats.action.stage - L.stage) + ' ft below action' : '';
-      chip.textContent = 'Below flood stages' + next; chip.style.color = 'var(--ok)';
-    } else { chip.textContent = CAT_NAME[c]; chip.style.color = 'var(' + CAT_COLOR[c] + ')'; }
+    else {
+      const pk = n.forecast && n.forecast.peak, fcat = pk && pk.t > Date.now() ? category(pk.stage, cats) : null;
+      const FC_WORD = { action: 'action stage', minor: 'minor flooding', moderate: 'moderate flooding', major: 'major flooding' };
+      const fNote = fcat ? ' · NWS forecasts ' + FC_WORD[fcat] + ' ('  + ft2(pk.stage) + ' ft) by ' + fmtTime.format(pk.t) : '';
+      if (!c) {
+        chip.textContent = (fcat ? 'Below flood stage now' : 'Below flood stages' + (cats.action ? ' · ' + ft2(cats.action.stage - L.stage) + ' ft below action' : '')) + fNote;
+        chip.style.color = fcat ? 'var(' + CAT_COLOR[fcat] + ')' : 'var(--ok)';
+      } else { chip.textContent = CAT_NAME[c] + ' now' + fNote; chip.style.color = 'var(' + CAT_COLOR[fcat && ['action','minor','moderate','major'].indexOf(fcat) > ['action','minor','moderate','major'].indexOf(c) ? fcat : c] + ')'; }
+    }
   } else {
     $('vStage').innerHTML = '–<small>ft</small>'; $('vFlow').innerHTML = '–<small>cfs</small>';
     $('vTime').textContent = 'No reading'; $('sTime').textContent = ' '; $('sStage').textContent = ' '; $('sFlow').textContent = ' ';
