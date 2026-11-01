@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Live San Juan River gauge at Pagosa Springs, CO, with flood stages, the NWS forecast and an estimated flood-width map.">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>San Juan at Pagosa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column — name + status, big gauge readout, the animated river cross-section with a staff gauge, then the 7-day trace and sources. */
+:root{
+  --bg:#eef3f2; --panel:#ffffff; --fg:#14231f; --muted:#5b6d68; --line:#cbd8d4;
+  --sky1:#bcd3dc; --sky2:#e9eff0; --ridge:#7d958f; --ridge2:#a7b9b3; --town:#4a5f59; --bank:#8a7660;
+  --water:#2f7d8f; --water2:#1d5b6c; --foam:#e6f4f4;
+  --accent:#d9663a;
+  --ok:#3c8c5a; --act:#c9a227; --minor:#e07b2e; --mod:#cf4b33; --major:#9b2f63; --hist:#506a86; --fc:#d9663a;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1517; --panel:#142024; --fg:#e2ecea; --muted:#90a39e; --line:#26383b;
+  --sky1:#0b1a24; --sky2:#1b2d35; --ridge:#22343a; --ridge2:#1a2a30; --town:#0f1c20; --bank:#3d3328;
+  --water:#2a7486; --water2:#164a57; --foam:#bfe3e6;
+  --accent:#f08a5d;
+  --ok:#5fb27e; --act:#e0bc45; --minor:#f0954f; --mod:#ec6b52; --major:#d16a9c; --hist:#8aa6c4; --fc:#f08a5d;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1517; --panel:#142024; --fg:#e2ecea; --muted:#90a39e; --line:#26383b;
+  --sky1:#0b1a24; --sky2:#1b2d35; --ridge:#22343a; --ridge2:#1a2a30; --town:#0f1c20; --bank:#3d3328;
+  --water:#2a7486; --water2:#164a57; --foam:#bfe3e6;
+  --accent:#f08a5d;
+  --ok:#5fb27e; --act:#e0bc45; --minor:#f0954f; --mod:#ec6b52; --major:#d16a9c; --hist:#8aa6c4; --fc:#f08a5d;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 16px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:2px 0 0;text-wrap:balance}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px;border:1.5px solid currentColor;white-space:nowrap}
+.chip::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-family:var(--mono)}
+.stat .v{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,52px);line-height:1.05;font-variant-numeric:tabular-nums}
+.stat .v small{font-family:var(--body);font-weight:500;font-size:.38em;color:var(--muted);margin-left:4px}
+.stat .s{font-size:13px;color:var(--muted)}
+.stat.time .v{font-size:clamp(20px,4.4vw,30px)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+button{font:600 14px var(--body);color:var(--bg);background:var(--fg);border:0;border-radius:8px;padding:10px 16px;cursor:pointer;min-height:42px}
+button:hover{opacity:.88} button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button[disabled]{opacity:.5;cursor:progress}
+.mode{font-size:13px;color:var(--muted);min-width:0;flex:1 1 260px}
+.mode b{color:var(--fg);font-weight:600}
+.official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
+.official a{color:inherit}
+.fb{flex-basis:100%;font-size:13.5px;font-weight:600;min-height:1.2em}
+.errs{display:grid;gap:6px}
+.err{border:1.5px solid var(--mod);color:var(--fg);background:color-mix(in srgb,var(--mod) 10%,var(--panel));border-radius:8px;padding:8px 12px;font-size:13.5px}
+.err b{color:var(--mod)}
+.scene{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--sky2)}
+#river{display:block;width:100%;height:clamp(340px,62vw,520px)}
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;font-size:13.5px;margin:0;padding:0;list-style:none}
+.legend li{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);min-width:0}
+.legend .sw{flex:0 0 22px;height:0;border-top:2.5px solid var(--c);transform:translateY(-4px)}
+.legend .sw.dash{border-top-style:dashed}
+.legend .nm{flex:1;min-width:0}
+.legend .ft{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.legend .note{display:block;font-size:12px;color:var(--muted)}
+section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+#spark{display:block;width:100%;height:auto}
+.foot{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+.foot a{color:inherit}
+.mono{font-family:var(--mono)}
+
+.fm-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
+.fm-head p{margin:0;color:var(--muted);font-size:13.5px;max-width:62ch}
+.fm-controls{display:grid;gap:10px;margin:12px 0}
+.fm-stage{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.fm-stage output{font-family:var(--display);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;min-width:4.6em}
+.fm-stage input[type=range]{flex:1 1 320px;accent-color:var(--water);min-width:0}
+.fm-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fm-chips button{background:var(--panel);color:var(--fg);border:1.5px solid var(--c,var(--line));font-weight:500;font-size:13px;min-height:34px;padding:5px 10px;border-radius:999px}
+.fm-chips button[aria-pressed="true"]{background:var(--c,var(--fg));color:var(--panel);border-color:var(--c,var(--fg))}
+.fm-chips button:disabled{opacity:.45;cursor:not-allowed}
+.fm-stats{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px}
+.fm-stats b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.fm-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1d2326}
+#fmap{display:block;width:100%;height:min(72vh,760px);cursor:grab;touch-action:none}
+#fmap.drag{cursor:grabbing}
+.fm-zoom{position:absolute;right:10px;top:10px;display:grid;gap:6px}
+.fm-zoom button{min-height:34px;width:34px;padding:0;font-size:18px;background:var(--panel);color:var(--fg);border:1px solid var(--line)}
+.fm-zoom button.wide{width:auto;padding:0 10px;font-size:12.5px}
+.fm-status{position:absolute;left:10px;bottom:10px;right:10px;pointer-events:none;display:flex}
+.fm-status span{background:color-mix(in srgb,var(--panel) 92%,transparent);color:var(--fg);border-radius:8px;padding:6px 10px;font-size:13px;pointer-events:auto;max-width:100%}
+.fm-legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-top:10px}
+.fm-legend i{display:inline-block;width:18px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.fm-whatif{flex-basis:100%;color:var(--major);font-weight:600}
+.fm-notes{font-size:12.5px;color:var(--muted);margin:10px 0 0;padding-left:18px;display:grid;gap:3px;max-width:90ch}
+@media (max-width:560px){.readout{grid-template-columns:1fr 1fr}.stat.time{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <aside class="official" aria-label="Official flood information">
+    <b>Unofficial page, built from public USGS and NWS data.</b> If you are in the Pagosa Springs area, follow the Town of Pagosa Springs and Archuleta County. As of Nov 1, 2026, mandatory evacuations were in effect for low-lying areas along the San Juan, Rio Blanco, Navajo and Piedra rivers. <b>In danger, call 911.</b>
+    Alerts: text <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town) or <span class="mono">81147</span> to <span class="mono">888777</span> (County).
+    Official river forecast: <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a>.
+  </aside>
+  <header>
+    <div>
+      <div class="eyebrow">USGS 09342500 · NWS PSPC2 · Pagosa Springs, CO</div>
+      <h1>San Juan at Pagosa</h1>
+    </div>
+    <span class="chip" id="chip" style="color:var(--muted)">Waiting for data</span>
+  </header>
+
+  <div class="readout">
+    <div class="stat"><div class="k">Gauge height</div><div class="v" id="vStage">–<small>ft</small></div><div class="s" id="sStage">&nbsp;</div></div>
+    <div class="stat"><div class="k">Flow</div><div class="v" id="vFlow">–<small>cfs</small></div><div class="s" id="sFlow">&nbsp;</div></div>
+    <div class="stat time"><div class="k">Reading taken</div><div class="v" id="vTime">–</div><div class="s" id="sTime">&nbsp;</div></div>
+  </div>
+
+  <div class="bar">
+    <button id="refresh" type="button">Refresh</button>
+    <div class="mode" id="mode">Starting up…</div>
+    <div class="fb" id="fb" role="status"></div>
+  </div>
+  <div class="errs" id="errs"></div>
+
+  <div class="scene"><canvas id="river" role="img" aria-label="Animated river cross-section showing the current water level against flood lines"></canvas></div>
+
+  <ul class="legend" id="legend"></ul>
+
+  <section class="card">
+    <h2>Last 7 days</h2>
+    <svg id="spark" viewBox="0 0 900 220" role="img" aria-label="Gauge height over the last seven days, with the NWS forecast"></svg>
+  </section>
+
+  <section class="card" id="floodmap">
+    <div class="fm-head">
+      <h2>How wide it gets</h2>
+      <p>Estimated water edge from 2018 USGS LiDAR, San Juan River Village down to the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
+    </div>
+    <div class="fm-controls">
+      <div class="fm-stage">
+        <output id="fmOut" for="fmRange">– ft</output>
+        <input type="range" id="fmRange" min="4" max="30" step="0.1" value="6.3" aria-label="River stage in feet" disabled>
+      </div>
+      <div class="fm-chips" id="fmChips"></div>
+      <div class="fm-stats" id="fmStats">Loading map…</div>
+    </div>
+    <div class="fm-wrap">
+      <canvas id="fmap" aria-label="Map of the river corridor with estimated flood extent"></canvas>
+      <div class="fm-zoom">
+        <button type="button" id="fmIn" aria-label="Zoom in">+</button>
+        <button type="button" id="fmOutZ" aria-label="Zoom out">−</button>
+        <button type="button" class="wide" id="fmTown">Downtown</button>
+        <button type="button" class="wide" id="fmAll">Whole reach</button>
+      </div>
+      <div class="fm-status"><span id="fmMsg">Loading map layers…</span></div>
+    </div>
+    <div class="fm-legend">
+      <span><i style="background:#9fd3ea"></i>Water just reaching</span>
+      <span><i style="background:#1f5f99"></i>Deeper water</span>
+      <span><i style="background:#e0533d"></i>Building with water at its walls</span>
+      <span><i style="background:#e9ebe8;border:1.5px solid #26303a"></i>Building staying dry</span>
+    </div>
+    <ul class="fm-notes">
+      <li>A model, not an official flood map: it raises the water the same amount along the whole reach and ignores bridges, debris and how fast the water moves.</li>
+      <li>Checked against NWS flood notes for this gauge: River Center Park and the Hermosa St backyards flood within a foot of 11 ft as NWS says; the Hot Springs Blvd &amp; San Juan St lot floods about 1 ft earlier than NWS says (16.2 ft), which fits what was seen on Oct 23 2026, when it flooded at the 15.02 ft crest.</li>
+      <li>The ground model is from 2018 and has buildings removed, so “water at its walls” means water reaches the building, not how deep it is inside. Channel changes since 2018 aren’t captured.</li>
+      <li>The 1911 level was measured on an older gauge datum, so its line here is approximate.</li>
+      <li>Above about 18 ft these are what-ifs beyond anything recorded. Read them as the ground that sits that high above the river, not as a forecast: at those levels side creeks, bridges and the valley shape matter more than this model allows.</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <div>Readings: <a href="https://waterdata.usgs.gov/monitoring-location/09342500/" target="_blank" rel="noopener">USGS 09342500</a> (15-minute, provisional). Flood stages, crests and forecast: <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">NWS PSPC2</a>.</div>
+    <div id="footNote"></div>
+  </div>
+</div>
+
+<script>
+// Shared parsers: used verbatim inside the page and in the verification run.
+const SRC = {
+  usgs: 'https://waterservices.usgs.gov/nwis/iv/?sites=09342500&parameterCd=00060,00065&period=P7D&format=rdb',
+  gauge: 'https://api.water.noaa.gov/nwps/v1/gauges/PSPC2',
+  fcst: 'https://api.water.noaa.gov/nwps/v1/gauges/PSPC2/stageflow/forecast'
+};
+const TZ_OFF = { MDT: '-06:00', MST: '-07:00' };
+// Crests Dave asked for, matched by date in NWS's historic crest list.
+const WANTED_CRESTS = [
+  { date: '2026-10-23', label: 'Oct 23 2026 crest' },
+  { date: '2025-10-14', label: 'Oct 2025 flood' },
+  { date: '1911-10-05', label: '1911 record' }
+];
+
+function parseUsgsRdb(text) {
+  const rows = text.split('\n').filter(l => l && !l.startsWith('#'));
+  if (rows.length < 3) throw new Error('USGS returned no data rows');
+  const head = rows[0].split('\t');
+  const iT = head.indexOf('datetime'), iZ = head.indexOf('tz_cd');
+  const iQ = head.findIndex(h => /_00060$/.test(h));
+  const iH = head.findIndex(h => /_00065$/.test(h));
+  if (iT < 0 || iZ < 0 || iQ < 0 || iH < 0) throw new Error('USGS table is missing a stage or flow column');
+  const series = [];
+  for (const line of rows.slice(2)) {
+    const c = line.split('\t');
+    const off = TZ_OFF[c[iZ]];
+    if (!off) continue;
+    const t = Date.parse(c[iT].replace(' ', 'T') + ':00' + off);
+    const h = parseFloat(c[iH]), q = parseFloat(c[iQ]);
+    if (!isFinite(t) || !isFinite(h)) continue;
+    series.push([t, h, isFinite(q) ? q : null, c[iH + 1] || '']);
+  }
+  if (!series.length) throw new Error('USGS returned no gauge-height values');
+  series.sort((a, b) => a[0] - b[0]);
+  const last = series[series.length - 1];
+  return { series: series.map(s => [s[0], s[1], s[2]]), last: { t: last[0], stage: last[1], flow: last[2], qual: last[3] } };
+}
+
+function parseNws(gauge, fc) {
+  const cats = {};
+  const fl = (gauge.flood || {}).categories || {};
+  for (const k of ['action', 'minor', 'moderate', 'major']) {
+    const s = fl[k] && fl[k].stage;
+    if (typeof s === 'number' && s > 0) cats[k] = { stage: s, flow: fl[k].flow > 0 ? fl[k].flow : null };
+  }
+  const hist = ((gauge.flood || {}).crests || {}).historic || [];
+  const crests = [];
+  for (const w of WANTED_CRESTS) {
+    const c = hist.find(h => (h.occurredTime || '').startsWith(w.date));
+    if (c) crests.push({ label: w.label, t: Date.parse(c.occurredTime), stage: c.stage, flow: c.flow, oldDatum: !!c.olddatum, prelim: c.preliminary === 'P' });
+  }
+  let forecast = null;
+  if (fc && Array.isArray(fc.data)) {
+    const mult = (fc.secondaryUnits || '').toLowerCase() === 'kcfs' ? 1000 : 1;
+    const pts = fc.data.filter(d => d.primary > -999).map(d => [Date.parse(d.validTime), d.primary, d.secondary > -999 ? Math.round(d.secondary * mult) : null]);
+    if (pts.length) {
+      const peak = pts.reduce((m, p) => (p[1] > m[1] ? p : m), pts[0]);
+      forecast = { issued: Date.parse(fc.issuedTime), points: pts, peak: { t: peak[0], stage: peak[1], flow: peak[2] } };
+    }
+  }
+  return { cats, crests, forecast, name: gauge.name || '' };
+}
+
+// The desktop browser's page-text tool wraps the body: "Title…\n---\n<body>\n\nTab Context…"
+function extractBody(t) {
+  let s = String(t);
+  const i = s.indexOf('\n---\n');
+  if (i >= 0) s = s.slice(i + 5);
+  const j = s.lastIndexOf('\n\nTab Context');
+  if (j >= 0) s = s.slice(0, j);
+  return s.trim();
+}
+
+
+const $ = id => document.getElementById(id);
+const DEN = 'America/Denver';
+const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: DEN, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+const fmtClock = new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: DEN, weekday: 'short', month: 'short', day: 'numeric' });
+const fmtYear = new Intl.DateTimeFormat('en-US', { timeZone: DEN, month: 'short', day: 'numeric', year: 'numeric' });
+const CAT_COLOR = { action: '--act', minor: '--minor', moderate: '--mod', major: '--major' };
+const CAT_NAME = { action: 'Action stage', minor: 'Minor flood', moderate: 'Moderate flood', major: 'Major flood' };
+
+function ago(ms) {
+  const m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  const h = Math.floor(m / 60), r = m % 60;
+  if (h < 48) return h + ' h ' + (r ? r + ' min ' : '') + 'ago';
+  return Math.round(h / 24) + ' days ago';
+}
+const ft2 = v => v.toFixed(2);
+const cfs = v => v == null ? '–' : Math.round(v).toLocaleString('en-US');
+
+// ---------- state ----------
+let snap = null;          // { usgs:{fetchedAt,series,last}, nws:{fetchedAt,cats,crests,forecast} }
+let errors = {};          // source -> message from the latest attempt
+let mode = 'boot';        // 'live' | 'saved' | 'none'
+let modeNote = '';
+let busy = false;
+function feedback(msg) { $('fb').textContent = msg; }
+
+function category(stage, cats) {
+  let c = null;
+  for (const k of ['action', 'minor', 'moderate', 'major']) if (cats[k] && stage >= cats[k].stage) c = k;
+  return c;
+}
+
+// ---------- rendering ----------
+function render() {
+  const u = snap && snap.usgs, n = snap && snap.nws;
+  const cats = n ? n.cats : {};
+  if (u) {
+    const L = u.last;
+    $('vStage').innerHTML = ft2(L.stage) + '<small>ft</small>';
+    $('vFlow').innerHTML = cfs(L.flow) + '<small>cfs</small>';
+    $('vTime').textContent = fmtTime.format(L.t);
+    $('sTime').textContent = ago(L.t) + (L.qual === 'P' ? ' · provisional' : '');
+    const day = u.series.filter(s => s[0] >= L.t - 864e5 && s[0] <= L.t - 864e5 + 36e5)[0];
+    const prev = u.series.length > 1 ? u.series[u.series.length - 2] : null;
+    const sgn = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '\u00b1');
+    const dFt = (a, b) => sgn(a - b) + ft2(Math.abs(a - b)) + ' ft';
+    const dQ = (a, b) => sgn(a - b) + cfs(Math.abs(a - b)) + ' cfs';
+    const mins = prev ? Math.round((L.t - prev[0]) / 60000) : 0;
+    const sLines = [], qLines = [];
+    if (prev) { sLines.push(dFt(L.stage, prev[1]) + ' vs last reading (' + mins + ' min)'); if (prev[2] != null && L.flow != null) qLines.push(dQ(L.flow, prev[2]) + ' vs last reading'); }
+    if (day) { sLines.push(dFt(L.stage, day[1]) + ' vs 24 h ago'); if (day[2] != null && L.flow != null) qLines.push(dQ(L.flow, day[2]) + ' vs 24 h ago'); }
+    $('sStage').innerHTML = sLines.length ? sLines.join('<br>') : '&nbsp;';
+    $('sFlow').innerHTML = qLines.length ? qLines.join('<br>') : '&nbsp;';
+    const c = n ? category(L.stage, cats) : null;
+    const chip = $('chip');
+    if (!n) { chip.textContent = 'Flood stages unavailable'; chip.style.color = 'var(--muted)'; }
+    else if (!c) {
+      const next = cats.action ? ' · ' + ft2(cats.action.stage - L.stage) + ' ft below action' : '';
+      chip.textContent = 'Below flood stages' + next; chip.style.color = 'var(--ok)';
+    } else { chip.textContent = CAT_NAME[c]; chip.style.color = 'var(' + CAT_COLOR[c] + ')'; }
+  } else {
+    $('vStage').innerHTML = '–<small>ft</small>'; $('vFlow').innerHTML = '–<small>cfs</small>';
+    $('vTime').textContent = 'No reading'; $('sTime').textContent = ' '; $('sStage').textContent = ' '; $('sFlow').textContent = ' ';
+  }
+  renderMode(); renderErrors(); renderLegend(); renderSpark(); setRiverTarget(); FM.onData();
+}
+
+function renderMode() {
+  const el = $('mode');
+  const parts = [];
+  if (mode === 'live') parts.push('<b>Live</b> · straight from USGS and NWS' + (snap && snap.usgs && snap.usgs.source === 'nws' ? ' (readings from NWS while USGS is down)' : ''));
+  else if (mode === 'none') parts.push('<b>No data yet</b>');
+  else parts.push('Starting up…');
+  if (snap && snap.usgs) parts.push('readings fetched ' + ago(snap.usgs.fetchedAt));
+  if (snap && snap.nws) parts.push('NWS fetched ' + ago(snap.nws.fetchedAt));
+  el.innerHTML = parts.join(' · ') + (modeNote ? '<br>' + modeNote : '');
+  const b = $('refresh');
+  b.disabled = busy;
+  b.textContent = busy ? 'Fetching…' : 'Refresh';
+}
+
+function renderErrors() {
+  const box = $('errs'); box.innerHTML = '';
+  for (const [k, msg] of Object.entries(errors)) {
+    if (!msg) continue;
+    const d = document.createElement('div'); d.className = 'err';
+    const b = document.createElement('b'); b.textContent = (k === 'usgs' ? 'USGS fetch failed: ' : k === 'nws' ? 'NWS fetch failed: ' : 'Problem: ');
+    const fellBack = k === 'usgs' && snap && snap.usgs && snap.usgs.source === 'nws';
+    d.append(b, document.createTextNode(msg + (fellBack ? '' : snap && snap[k] ? ' The ' + k.toUpperCase() + ' numbers shown are from the earlier fetch.' : ' Nothing from this source is shown.')));
+    box.append(d);
+  }
+}
+
+function refLines() {
+  const n = snap && snap.nws; if (!n) return [];
+  const out = [];
+  for (const k of ['action', 'minor', 'moderate', 'major']) if (n.cats[k]) out.push({ ft: n.cats[k].stage, label: CAT_NAME[k], c: CAT_COLOR[k], note: n.cats[k].flow ? cfs(n.cats[k].flow) + ' cfs' : '' });
+  for (const c of n.crests) out.push({ ft: c.stage, label: c.label, c: '--hist', hist: true, note: fmtYear.format(c.t) + (c.flow ? ' · ' + cfs(c.flow) + ' cfs' : '') + (c.oldDatum ? ' · old gauge datum, not directly comparable' : '') + (c.prelim ? ' · preliminary' : '') });
+  const f = n.forecast;
+  if (f) out.push({ ft: f.peak.stage, label: 'NWS forecast peak', c: '--fc', dash: true, note: fmtTime.format(f.peak.t) + (f.peak.flow ? ' · ' + cfs(f.peak.flow) + ' cfs' : '') + ' · issued ' + fmtClock.format(f.issued) + ' ' + fmtDay.format(f.issued) });
+  return out.sort((a, b) => b.ft - a.ft);
+}
+
+function renderLegend() {
+  const ul = $('legend'); ul.innerHTML = '';
+  for (const r of refLines()) {
+    const li = document.createElement('li'); li.style.setProperty('--c', 'var(' + r.c + ')');
+    const sw = document.createElement('span'); sw.className = 'sw' + (r.dash ? ' dash' : '');
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.label;
+    const note = document.createElement('span'); note.className = 'note'; note.textContent = r.note; nm.append(note);
+    const ft = document.createElement('span'); ft.className = 'ft'; ft.textContent = ft2(r.ft) + ' ft';
+    li.append(sw, nm, ft); ul.append(li);
+  }
+  $('footNote').textContent = snap && snap.nws && snap.nws.crests.some(c => c.oldDatum)
+    ? 'NWS marks the 1911 crest as measured on an older gauge datum, so it is not a like-for-like comparison with today’s stage.' : '';
+}
+
+// ---------- sparkline ----------
+function renderSpark() {
+  const svg = $('spark'); const NS = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '';
+  const u = snap && snap.usgs; if (!u) { const t = document.createElementNS(NS, 'text'); t.setAttribute('x', 450); t.setAttribute('y', 110); t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', 'var(--muted)'); t.textContent = 'No USGS readings to chart'; svg.append(t); return; }
+  const W = 900, H = 220, pl = 44, pr = 14, pt = 12, pb = 28;
+  const obs = u.series;
+  const fc = snap.nws && snap.nws.forecast ? snap.nws.forecast.points.filter(p => p[0] > obs[obs.length - 1][0] - 6 * 36e5) : [];
+  const t0 = obs[0][0], t1 = Math.max(obs[obs.length - 1][0], fc.length ? fc[fc.length - 1][0] : 0);
+  const vals = obs.map(p => p[1]).concat(fc.map(p => p[1]));
+  const cats = snap.nws ? snap.nws.cats : {};
+  let lo = Math.floor(Math.min(...vals) - 0.5), hi = Math.ceil(Math.max(...vals, cats.action ? cats.action.stage : 0) + 0.5);
+  const x = t => pl + (t - t0) / (t1 - t0) * (W - pl - pr);
+  const y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const el = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  // grid + y labels
+  const step = hi - lo > 8 ? 2 : 1;
+  for (let v = Math.ceil(lo); v <= hi; v += step) {
+    el('line', { x1: pl, x2: W - pr, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 });
+    el('text', { x: pl - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = v;
+  }
+  // flood lines in range
+  for (const k of ['action', 'minor', 'moderate', 'major']) if (cats[k] && cats[k].stage <= hi && cats[k].stage >= lo) {
+    el('line', { x1: pl, x2: W - pr, y1: y(cats[k].stage), y2: y(cats[k].stage), stroke: 'var(' + CAT_COLOR[k] + ')', 'stroke-width': 1.5, 'stroke-dasharray': '2 4' });
+    el('text', { x: pl + 6, y: y(cats[k].stage) - 5, 'font-size': 11.5, fill: 'var(' + CAT_COLOR[k] + ')', 'font-family': 'var(--mono)' }).textContent = CAT_NAME[k] + ' ' + cats[k].stage;
+  }
+  // day ticks (midnight Denver)
+  const seen = new Set();
+  for (let t = t0; t <= t1; t += 36e5) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: 'numeric', hourCycle: 'h23' }).format(t);
+    const d = fmtDay.format(t);
+    if (parts === '00' && !seen.has(d)) {
+      seen.add(d);
+      el('line', { x1: x(t), x2: x(t), y1: pt, y2: H - pb, stroke: 'var(--line)', 'stroke-width': 1 });
+      el('text', { x: x(t) + 4, y: H - 9, 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = d.replace(/,.*/, '');
+    }
+  }
+  // area + line
+  const path = obs.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  el('path', { d: path + ` L${x(obs[obs.length - 1][0]).toFixed(1)} ${H - pb} L${x(t0).toFixed(1)} ${H - pb} Z`, fill: 'var(--water)', opacity: .18 });
+  el('path', { d: path, fill: 'none', stroke: 'var(--water)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+  if (fc.length) {
+    const last = obs[obs.length - 1];
+    const fpath = 'M' + x(last[0]).toFixed(1) + ' ' + y(last[1]).toFixed(1) + ' ' + fc.filter(p => p[0] > last[0]).map(p => 'L' + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+    el('path', { d: fpath, fill: 'none', stroke: 'var(--fc)', 'stroke-width': 2, 'stroke-dasharray': '6 5' });
+    const pk = snap.nws.forecast.peak;
+    if (pk.t > last[0]) {
+      el('circle', { cx: x(pk.t), cy: y(pk.stage), r: 4.5, fill: 'var(--fc)' });
+      const tx = el('text', { x: x(pk.t), y: y(pk.stage) - 10, 'text-anchor': x(pk.t) > W - 120 ? 'end' : 'middle', 'font-size': 12.5, 'font-weight': 600, fill: 'var(--fc)', 'font-family': 'var(--body)' });
+      tx.textContent = 'Forecast ' + ft2(pk.stage) + ' ft';
+    }
+    el('text', { x: x(last[0]) + 6, y: pt + 12, 'font-size': 11.5, fill: 'var(--fc)', 'font-family': 'var(--mono)' }).textContent = 'NWS forecast →';
+  }
+  const L = obs[obs.length - 1];
+  el('circle', { cx: x(L[0]), cy: y(L[1]), r: 5, fill: 'var(--water)', stroke: 'var(--panel)', 'stroke-width': 2 });
+}
+
+// ---------- river canvas ----------
+const cv = $('river'), ctx = cv.getContext('2d');
+const MIN_FT = 3; let MAX_FT = 18.5;   // grows to fit a forecast or reading above 18.5 ft
+let shownFt = null, targetFt = null, flowNow = 800;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+function setRiverTarget() {
+  const hi = Math.max(snap && snap.nws && snap.nws.forecast ? snap.nws.forecast.peak.stage : 0, snap && snap.usgs ? snap.usgs.last.stage : 0);
+  MAX_FT = Math.max(18.5, Math.ceil(hi + 1));
+  if (snap && snap.usgs) { targetFt = snap.usgs.last.stage; flowNow = snap.usgs.last.flow || 800; if (shownFt == null) shownFt = MIN_FT + 0.5; }
+  if (reduce.matches) shownFt = targetFt;
+  drawRiver(performance.now());
+}
+const tok = {}; function readTokens() { const cs = getComputedStyle(document.documentElement); for (const k of ['sky1','sky2','ridge','ridge2','town','bank','water','water2','foam','fg','muted','act','minor','mod','major','hist','fc','panel']) tok[k] = cs.getPropertyValue('--' + k).trim(); }
+readTokens();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTokens);
+new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// fixed pseudo-random skyline so it doesn't jitter between frames
+function rng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+const r1 = rng(7); const RIDGE = Array.from({ length: 40 }, () => r1());
+const r2 = rng(42); const TOWN = Array.from({ length: 26 }, () => ({ w: 0.018 + r2() * 0.03, h: 0.04 + r2() * 0.07, roof: r2() > .5, gap: r2() * 0.012 }));
+const r3 = rng(99); const DRIFT = Array.from({ length: 70 }, () => ({ x: r3(), d: r3(), l: 0.02 + r3() * 0.05 }));
+
+function drawRiver(now) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const t = now / 1000;
+  const narrow = W < 560;
+  const padL = narrow ? 40 : 52, padR = narrow ? 8 : 12, labelW = narrow ? 128 : 210;
+  const top = 18, bottom = H - 14;
+  const yFt = f => top + (MAX_FT - f) / (MAX_FT - MIN_FT) * (bottom - top);
+  // sky
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, tok.sky1); g.addColorStop(1, tok.sky2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // far ridge (San Juans)
+  const ridgeBase = yFt(15.5);
+  ctx.fillStyle = tok.ridge2; ctx.beginPath(); ctx.moveTo(0, H);
+  RIDGE.forEach((v, i) => ctx.lineTo(i / (RIDGE.length - 1) * W, ridgeBase - 30 - v * (H * .16) - Math.sin(i * .7) * 14));
+  ctx.lineTo(W, H); ctx.fill();
+  ctx.fillStyle = tok.ridge; ctx.beginPath(); ctx.moveTo(0, H);
+  RIDGE.forEach((v, i) => ctx.lineTo(i / (RIDGE.length - 1) * W, ridgeBase + 10 - (1 - v) * (H * .08) - Math.cos(i * 1.3) * 8));
+  ctx.lineTo(W, H); ctx.fill();
+  // town on the bank, with hot-spring steam
+  const bankTop = yFt(16.3);
+  ctx.fillStyle = tok.town;
+  let x = padL + 6; let i = 0;
+  while (x < W - labelW - 10 && i < TOWN.length) {
+    const b = TOWN[i++], bw = b.w * W, bh = b.h * H;
+    ctx.fillRect(x, bankTop - bh, bw, bh + 2);
+    if (b.roof) { ctx.beginPath(); ctx.moveTo(x - 2, bankTop - bh); ctx.lineTo(x + bw / 2, bankTop - bh - bw * .35); ctx.lineTo(x + bw + 2, bankTop - bh); ctx.fill(); }
+    x += bw + b.gap * W;
+  }
+  ctx.fillStyle = tok.bank; ctx.fillRect(0, bankTop, W, H - bankTop);
+  // steam wisps
+  if (!reduce.matches) for (let k = 0; k < 3; k++) {
+    const sx = padL + 30 + k * Math.min(70, W * .08), ph = (t * .35 + k * .33) % 1;
+    ctx.globalAlpha = (1 - ph) * .35; ctx.fillStyle = tok.foam;
+    ctx.beginPath(); ctx.ellipse(sx + Math.sin(t + k) * 6, bankTop - 6 - ph * 50, 6 + ph * 14, 4 + ph * 8, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  // channel: cut the bank with a slightly darker river trench
+  ctx.fillStyle = tok.sky2; ctx.globalAlpha = .55; ctx.fillRect(padL, bankTop + 4, W - padL - padR, bottom - bankTop - 4); ctx.globalAlpha = 1;
+  // water
+  if (shownFt != null && targetFt != null) {
+    shownFt += (targetFt - shownFt) * (reduce.matches ? 1 : 0.035);
+    if (Math.abs(targetFt - shownFt) < 0.002) shownFt = targetFt;
+    const wy = yFt(shownFt);
+    const speed = 0.4 + Math.min(flowNow, 10000) / 2500;
+    const wg = ctx.createLinearGradient(0, wy, 0, bottom); wg.addColorStop(0, tok.water); wg.addColorStop(1, tok.water2);
+    ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(padL, bottom);
+    for (let px = padL; px <= W - padR; px += 6) {
+      const amp = reduce.matches ? 0 : 2.2 + Math.min(flowNow, 9000) / 2500;
+      ctx.lineTo(px, wy + Math.sin(px * .035 - t * speed * 2.2) * amp + Math.sin(px * .011 - t * speed) * amp * .6);
+    }
+    ctx.lineTo(W - padR, bottom); ctx.closePath(); ctx.fill();
+    // drifting streaks show the current
+    ctx.strokeStyle = tok.foam; ctx.lineWidth = 1.4;
+    for (const d of DRIFT) {
+      const yy = wy + 8 + d.d * (bottom - wy - 12); if (yy > bottom - 4) continue;
+      const span = W - padL - padR;
+      const xx = padL + ((d.x + (reduce.matches ? 0 : t * speed * .05 * (0.6 + (1 - d.d)))) % 1) * span;
+      ctx.globalAlpha = .25 * (1 - d.d * .7);
+      ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(Math.min(xx + d.l * span, W - padR), yy); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // current level tag
+    ctx.fillStyle = tok.fg; ctx.font = `600 ${narrow ? 13 : 14}px "IBM Plex Sans", system-ui, sans-serif`; ctx.textBaseline = 'bottom';
+    ctx.fillText('Now ' + targetFt.toFixed(2) + ' ft', padL + 10, wy - 8);
+  }
+  // staff gauge
+  ctx.fillStyle = tok.panel; ctx.globalAlpha = .85; ctx.fillRect(0, top - 8, padL - 6, bottom - top + 16); ctx.globalAlpha = 1;
+  ctx.strokeStyle = tok.fg; ctx.fillStyle = tok.fg; ctx.lineWidth = 1; ctx.font = `500 11px "IBM Plex Mono", ui-monospace, monospace`; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+  for (let f = Math.ceil(MIN_FT); f <= MAX_FT; f++) {
+    const yy = yFt(f), major = f % 2 === 0;
+    ctx.beginPath(); ctx.moveTo(padL - 6 - (major ? 10 : 5), yy); ctx.lineTo(padL - 6, yy); ctx.stroke();
+    if (major) ctx.fillText(f, padL - 19, yy);
+  }
+  ctx.textAlign = 'left';
+  // reference lines with de-overlapped labels
+  const refs = refLines().filter(r => r.ft >= MIN_FT && r.ft <= MAX_FT);
+  const gap = narrow ? 14 : 16;
+  const placed = refs.map(r => ({ r, y: yFt(r.ft), ly: yFt(r.ft) })).sort((a, b) => a.y - b.y);
+  for (let k = 1; k < placed.length; k++) if (placed[k].ly - placed[k - 1].ly < gap) placed[k].ly = placed[k - 1].ly + gap;
+  const over = placed.length ? placed[placed.length - 1].ly - (bottom - 6) : 0;
+  if (over > 0) placed.forEach(p => p.ly -= over);
+  const lx = W - padR - labelW;
+  ctx.font = `500 ${narrow ? 11 : 12}px "IBM Plex Sans", system-ui, sans-serif`;
+  for (const p of placed) {
+    const col = tok[p.r.c.slice(2)];
+    ctx.strokeStyle = col; ctx.lineWidth = p.r.hist ? 1.5 : 2; ctx.setLineDash(p.r.dash ? [7, 6] : p.r.hist ? [1.5, 3.5] : []);
+    ctx.beginPath(); ctx.moveTo(padL, p.y); ctx.lineTo(lx - 8, p.y); ctx.lineTo(lx - 2, p.ly); ctx.stroke(); ctx.setLineDash([]);
+    const txt = (narrow ? shortLabel(p.r.label) : p.r.label) + ' ' + p.r.ft.toFixed(narrow ? 1 : 2);
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = tok.panel; ctx.globalAlpha = .82; ctx.fillRect(lx, p.ly - 8, tw + 8, 16); ctx.globalAlpha = 1;
+    ctx.fillStyle = col; ctx.textBaseline = 'middle'; ctx.fillText(txt, lx + 4, p.ly);
+  }
+  if (!snap || !snap.usgs) {
+    ctx.fillStyle = tok.fg; ctx.font = '600 15px "IBM Plex Sans", system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(mode === 'boot' ? 'Loading gauge…' : 'No gauge reading to draw', W / 2, H / 2); ctx.textAlign = 'left';
+  }
+}
+function shortLabel(s) { return s.replace(' flood', '').replace(' stage', '').replace('NWS forecast peak', 'Forecast').replace(' crest', '').replace('Oct 23 2026', 'Oct 23 ’26').replace('Oct 2025', 'Oct ’25'); }
+function loop(now) { drawRiver(now); if (!reduce.matches) requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+addEventListener('resize', () => drawRiver(performance.now()));
+
+// ---------- data: fetched straight from USGS and NWS (both allow browser requests from any site) ----------
+const NWS_OBS = 'https://api.water.noaa.gov/nwps/v1/gauges/PSPC2/stageflow/observed';
+async function getText(url) {
+  let r;
+  try { r = await fetch(url, { cache: 'no-store' }); }
+  catch (e) { throw new Error('couldn’t reach ' + new URL(url).host + ' (network error)'); }
+  if (!r.ok) throw new Error(new URL(url).host + ' answered HTTP ' + r.status + (r.status === 503 ? ' (service temporarily unavailable)' : ''));
+  return r.text();
+}
+// Readings from NWS's copy of the same gauge, used only when USGS is down.
+function parseNwsObserved(j, days) {
+  const mult = (j.secondaryUnits || '').toLowerCase() === 'kcfs' ? 1000 : 1;
+  const pts = (j.data || []).filter(d => d.primary > -999).map(d => [Date.parse(d.validTime), d.primary, d.secondary > -999 ? Math.round(d.secondary * mult) : null]);
+  if (!pts.length) throw new Error('NWS returned no readings');
+  pts.sort((a, b) => a[0] - b[0]);
+  const last = pts[pts.length - 1], from = last[0] - days * 864e5;
+  const series = pts.filter(p => p[0] >= from);
+  return { series, last: { t: last[0], stage: last[1], flow: last[2], qual: '' }, source: 'nws' };
+}
+
+async function liveRefresh(manual) {
+  if (busy) return;
+  const before = snap && snap.usgs ? snap.usgs.last.t : null;
+  busy = true; renderMode(); if (manual) feedback('Fetching from USGS and NWS…');
+  const next = Object.assign({}, snap || {});
+  const errs = {};
+  try {
+    next.usgs = Object.assign({ fetchedAt: Date.now(), source: 'usgs' }, parseUsgsRdb(await getText(SRC.usgs)));
+  } catch (e) {
+    try {
+      const obs = parseNwsObserved(JSON.parse(await getText(NWS_OBS)), 7);
+      next.usgs = Object.assign({ fetchedAt: Date.now() }, obs);
+      errs.usgs = (e.message || String(e)) + '. Showing NWS’s copy of the same gauge instead.';
+    } catch (e2) { errs.usgs = (e.message || String(e)) + '; the NWS backup failed too (' + (e2.message || e2) + ').'; }
+  }
+  try {
+    let gauge; try { gauge = JSON.parse(await getText(SRC.gauge)); } catch (e) { throw new Error(e.message && e.message.includes('HTTP') ? e.message : 'NWS gauge reply wasn’t usable'); }
+    if (gauge.code && gauge.message) throw new Error('NWS said: ' + gauge.message);
+    let fc = null, fErr = null;
+    try { fc = JSON.parse(await getText(SRC.fcst)); if (fc.code && fc.message) { fErr = fc.message; fc = null; } }
+    catch (e) { fErr = e.message || String(e); }
+    next.nws = Object.assign({ fetchedAt: Date.now() }, parseNws(gauge, fc));
+    if (fErr) errs.forecast = 'NWS forecast unavailable: ' + fErr;
+  } catch (e) { errs.nws = e.message || String(e); }
+  busy = false;
+  errors = errs;
+  if (next.usgs || next.nws) { snap = next; mode = 'live'; } else mode = 'none';
+  render();
+  const got = next.usgs;
+  if (!got) feedback('Couldn’t get readings right now; see the red notes below. Press Refresh to try again.');
+  else if (got.last.t === before) feedback('Checked ' + fmtClock.format(Date.now()) + ': no new reading yet. New readings arrive about once an hour.');
+  else feedback('Updated ' + fmtClock.format(Date.now()) + ': newest reading is from ' + fmtClock.format(got.last.t) + (got.source === 'nws' ? ' (from NWS; USGS is down).' : '.'));
+}
+
+
+// ---------- flood map ----------
+const FM = (() => {
+  const cv = $('fmap'), ctx = cv.getContext('2d');
+  const range = $('fmRange'), out = $('fmOut'), chipsEl = $('fmChips'), statsEl = $('fmStats'), msgEl = $('fmMsg');
+  let L = null, S = null, Wd = 0, Ht = 0, res = 2;
+  let fidx = null;        // Uint8 per cell: 0 dry, 1..N first-wet stage index + 1 (N = number of stages), 255 outside
+  let shade = null;       // Uint8 per cell
+  let order = null, start = null;   // wet cells sorted by first-wet index; start[k] = first position of index k
+  let off = null, offCtx = null, img = null;
+  let k = 23, kDrawn = -1, chosen = 'now', userMoved = false, ready = false, failed = false;
+  let view = { s: 0.3, tx: 0, ty: 0 };
+  let probe = null;       // {x,y (grid px), lo, hi, wM, k}
+  const RAMP = [];        // depth step (0.1 ft) -> [r,g,b]
+  for (let d = 0; d <= 60; d++) { const t = d / 60; RAMP.push([159 + (31 - 159) * t, 211 + (95 - 211) * t, 234 + (153 - 234) * t]); }
+
+  const ft = v => v.toFixed(1);
+  const stageAt = i => S[i];
+  const idxOf = st => { let b = 0; for (let i = 1; i < S.length; i++) if (Math.abs(S[i] - st) < Math.abs(S[b] - st)) b = i; return b; };   // nearest level: 0.1 ft steps to 18.5, then 0.5 ft
+
+  async function decodeGray(url) {
+    const r = await fetch(url); if (!r.ok) throw new Error(url + ' HTTP ' + r.status);
+    const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
+    const d = x.getImageData(0, 0, bmp.width, bmp.height).data, g = new Uint8Array(bmp.width * bmp.height);
+    for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = d[j];
+    return { g, w: bmp.width, h: bmp.height };
+  }
+
+  async function load() {
+    try {
+      const [lj, wa, sh] = await Promise.all([fetch('map/layers.json').then(r => { if (!r.ok) throw new Error('layers HTTP ' + r.status); return r.json(); }), decodeGray('map/water.png'), decodeGray('map/shade.jpg')]);
+      L = lj; S = L.meta.stages; res = L.meta.res; Wd = wa.w; Ht = wa.h;
+      if (Wd !== L.meta.w || Ht !== L.meta.h || sh.w !== Wd || sh.h !== Ht) throw new Error('map layers have mismatched sizes');
+      fidx = wa.g; shade = sh.g;
+      // counting sort of wet cells by first-wet index
+      const cnt = new Uint32Array(S.length + 1);
+      for (let i = 0; i < fidx.length; i++) { const v = fidx[i]; if (v >= 1 && v <= S.length) cnt[v - 1]++; }
+      start = new Uint32Array(S.length + 1); for (let i = 0; i < S.length; i++) start[i + 1] = start[i] + cnt[i];
+      order = new Uint32Array(start[S.length]); const pos = start.slice(0, S.length);
+      for (let i = 0; i < fidx.length; i++) { const v = fidx[i]; if (v >= 1 && v <= S.length) order[pos[v - 1]++] = i; }
+      off = document.createElement('canvas'); off.width = Wd; off.height = Ht; offCtx = off.getContext('2d');
+      img = offCtx.createImageData(Wd, Ht); const d = img.data;
+      for (let i = 0, j = 0; i < shade.length; i++, j += 4) {
+        const v = fidx[i] === 255 ? 0 : shade[i];
+        d[j] = v * 0.93 + 8; d[j + 1] = v * 0.93 + 10; d[j + 2] = v * 0.9 + 12; d[j + 3] = fidx[i] === 255 ? 70 : 255;
+      }
+      window.__fm = { counts: Array.from(cnt), wetTotal: order.length, w: Wd, h: Ht, stages: S };
+      ready = true; range.disabled = false; msgEl.textContent = 'Click the river to measure its width at the level shown.';
+      buildChips(); fit('town'); onData(true);
+    } catch (e) {
+      failed = true; msgEl.textContent = 'The map layers didn’t load (' + (e.message || e) + '). The rest of the page still works.';
+      statsEl.textContent = 'Map unavailable.';
+    }
+  }
+
+  function paintWater() {
+    if (!ready || k === kDrawn) return;
+    const d = img.data;
+    // restore cells that were wet before but are dry now
+    if (kDrawn > k) for (let p = start[k + 1]; p < start[kDrawn + 1]; p++) {
+      const i = order[p], j = i * 4, v = shade[i]; d[j] = v * 0.93 + 8; d[j + 1] = v * 0.93 + 10; d[j + 2] = v * 0.9 + 12;
+    }
+    const end = start[k + 1], Sk = S[k];
+    for (let p = 0; p < end; p++) {
+      const i = order[p], j = i * 4, dep = Math.min(60, Math.round((Sk - S[fidx[i] - 1]) * 10)), c = RAMP[dep], v = shade[i] / 255;
+      const lit = 0.72 + 0.28 * v;
+      d[j] = c[0] * lit; d[j + 1] = c[1] * lit; d[j + 2] = c[2] * lit;
+    }
+    offCtx.putImageData(img, 0, 0); kDrawn = k;
+  }
+
+  function sizeCanvas() {
+    const dpr = Math.min(devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    return dpr;
+  }
+  function fit(which) {
+    if (!ready) return;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    let x0 = 0, y0 = 0, x1 = Wd, y1 = Ht;
+    if (which === 'town') { const g = L.meta.places.find(p => p.n === 'USGS gauge'); const cx = g.x / res + 250, cy = g.y / res - 120, half = 1300 / res; x0 = cx - half; x1 = cx + half; y0 = cy - half * h / w; y1 = cy + half * h / w; }
+    const s = Math.min(w / (x1 - x0), h / (y1 - y0));
+    view = { s, tx: w / 2 - s * (x0 + x1) / 2, ty: h / 2 - s * (y0 + y1) / 2 }; draw();
+  }
+
+  function draw() {
+    const dpr = sizeCanvas(); const w = cv.clientWidth, h = cv.clientHeight;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#1d2326'; ctx.fillRect(0, 0, w, h);
+    if (!ready) return;
+    paintWater();
+    const { s, tx, ty } = view;
+    ctx.save(); ctx.translate(tx, ty); ctx.scale(s, s);
+    ctx.imageSmoothingEnabled = s < 1.5; ctx.drawImage(off, 0, 0);
+    const lw = 1 / s, mpp = 1 / res;   // layers are in metres; grid px = metres / res
+    ctx.scale(mpp, mpp);
+    // roads
+    if (s > 0.18) {
+      ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.4 * lw * res; ctx.lineJoin = 'round';
+      ctx.beginPath(); for (const r of L.roads) { r.p.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); } ctx.stroke();
+    }
+    // buildings
+    const st = stageAt(k);
+    ctx.lineWidth = Math.max(1, 1.2 * lw * res);
+    for (const b of L.buildings) {
+      ctx.beginPath(); b.p.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
+      if (b.f != null && b.f <= st) { ctx.fillStyle = '#e0533d'; ctx.fill(); ctx.strokeStyle = '#7d1d12'; ctx.stroke(); }
+      else { ctx.strokeStyle = '#26303a'; ctx.stroke(); }
+    }
+    // probe line
+    if (probe) {
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3 * lw * res; ctx.beginPath();
+      ctx.moveTo(probe.ax, probe.ay); ctx.lineTo(probe.bx, probe.by); ctx.stroke();
+      for (const [x, y] of [[probe.ax, probe.ay], [probe.bx, probe.by]]) { ctx.beginPath(); ctx.arc(x, y, 4 * lw * res, 0, 7); ctx.fillStyle = '#ffd23f'; ctx.fill(); }
+    }
+    ctx.restore();
+    // place labels (screen space)
+    ctx.font = '600 12.5px "IBM Plex Sans", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    for (const p of L.meta.places) {
+      const X = tx + s * p.x / res, Y = ty + s * p.y / res; if (X < -50 || Y < -20 || X > w + 50 || Y > h + 20) continue;
+      ctx.beginPath(); ctx.arc(X, Y, 4.5, 0, 7); ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.stroke();
+      const tw = ctx.measureText(p.n).width; ctx.fillStyle = 'rgba(17,22,24,.78)'; ctx.fillRect(X + 8, Y - 10, tw + 10, 20);
+      ctx.fillStyle = '#fff'; ctx.fillText(p.n, X + 13, Y);
+    }
+    // scale bar
+    const target = 120 / s * res; const nice = [50, 100, 200, 250, 500, 1000, 2000].find(v => v >= target) || 2000;
+    const px = nice / res * s; ctx.fillStyle = 'rgba(17,22,24,.78)'; ctx.fillRect(10, 10, px + 20, 30);
+    ctx.fillStyle = '#fff'; ctx.fillRect(20, 30, px, 3); ctx.font = '500 11.5px "IBM Plex Mono", monospace';
+    ctx.fillText(nice >= 1000 ? (nice / 1000) + ' km' : nice + ' m (' + Math.round(nice / 0.3048) + ' ft)', 20, 20);
+  }
+
+  // width across the river through a transect point, from the 2 m grid (same rule as river_width.py)
+  function widthAt(t, kk) {
+    const n = Math.round(500 / res), half = n;
+    const cx = t.x / res, cy = t.y / res, nx = t.nx, ny = t.ny;
+    const wet = new Array(2 * n + 1);
+    for (let i = -n; i <= n; i++) {
+      const c = Math.floor(cx + nx * i), r = Math.floor(cy + ny * i);
+      const v = (r >= 0 && r < Ht && c >= 0 && c < Wd) ? fidx[r * Wd + c] : 0;
+      wet[i + n] = v >= 1 && v <= S.length && v - 1 <= kk;
+    }
+    let mid = half;
+    if (!wet[mid]) { let best = -1; for (let j = Math.max(mid - 8, 0); j <= mid + 8; j++) if (wet[j] && (best < 0 || Math.abs(j - mid) < Math.abs(best - mid))) best = j; if (best < 0) return null; mid = best; }
+    let lo = mid, hi = mid; while (lo - 1 >= 0 && wet[lo - 1]) lo--; while (hi + 1 < wet.length && wet[hi + 1]) hi++;
+    return { wM: (hi - lo + 1) * res, a: lo - n, b: hi - n };
+  }
+
+  function setProbe(t) {
+    const r = widthAt(t, k);
+    if (!r) { probe = null; msgEl.textContent = 'No water there at ' + ft(stageAt(k)) + ' ft.'; draw(); return; }
+    probe = { t, ax: t.x + t.nx * r.a * res, ay: t.y + t.ny * r.a * res, bx: t.x + t.nx * (r.b + 1) * res, by: t.y + t.ny * (r.b + 1) * res };
+    const mi = (t.s / 1609.34).toFixed(1), wM = Math.abs(t.w[k]);   // the model's own 2 m width; the drawn line is recomputed here
+    msgEl.textContent = 'Width here at ' + ft(stageAt(k)) + ' ft: ' + Math.round(wM / 0.3048) + ' ft (' + Math.round(wM) + ' m) · ' + mi + ' river miles below San Juan River Village';
+    draw();
+  }
+
+  function setK(newK, why) {
+    k = newK; range.value = stageAt(k).toFixed(1); out.textContent = ft(stageAt(k)) + ' ft';
+    if (why !== 'chip') chosen = null;
+    renderStats(); markChips(); if (probe) setProbe(probe.t); else draw();
+  }
+
+  function renderStats() {
+    if (!ready) return;
+    const st = stageAt(k), n = L.buildings.filter(b => b.f != null && b.f <= st).length;
+    const g = L.meta.places.find(p => p.n === 'USGS gauge');
+    const t = L.transects.reduce((m, t) => Math.hypot(t.x - g.x, t.y - g.y) < Math.hypot(m.x - g.x, m.y - g.y) ? t : m);
+    const w = Math.abs(t.w[k]);
+    const wet = start[k + 1] * res * res / 4046.86;
+    statsEl.innerHTML = '';
+    const add = (label, val) => { const sp = document.createElement('span'); sp.append(label + ' '); const b = document.createElement('b'); b.textContent = val; sp.append(b); statsEl.append(sp); };
+    add('Buildings with water at their walls:', n + ' of ' + L.buildings.length);
+    add('Width at the gauge:', Math.round(w / 0.3048) + ' ft');
+    add('Area under water:', Math.round(wet) + ' acres');
+    const live = liveStage();
+    if (live != null && live < S[0]) add('Now:', live.toFixed(2) + ' ft (below the map’s 4 ft floor, shown at 4 ft)');
+    if (st > L.meta.record_ft) { const sp = document.createElement('span'); sp.className = 'fm-whatif'; sp.textContent = 'What-if: higher than any recorded flood here (1911 was about ' + L.meta.record_ft + ' ft).'; statsEl.append(sp); }
+    if (L.meta.edge_stage != null && st >= L.meta.edge_stage) { const sp = document.createElement('span'); sp.className = 'fm-whatif'; sp.textContent = 'Water reaches the edge of the mapped strip at this level, so it would spread further than shown.'; statsEl.append(sp); }
+  }
+
+  function liveStage() { return snap && snap.usgs ? snap.usgs.last.stage : null; }
+  function chipDefs() {
+    const n = snap && snap.nws, defs = [];
+    const live = liveStage();
+    defs.push({ id: 'now', label: live != null ? 'Now ' + live.toFixed(2) : 'Now', st: live, c: '--water' });
+    if (n) {
+      if (n.forecast) defs.push({ id: 'fc', label: 'Forecast peak ' + n.forecast.peak.stage.toFixed(2), st: n.forecast.peak.stage, c: '--fc' });
+      for (const key of ['action', 'minor', 'moderate', 'major']) if (n.cats[key]) defs.push({ id: key, label: CAT_NAME[key] + ' ' + n.cats[key].stage, st: n.cats[key].stage, c: CAT_COLOR[key] });
+      for (const c of n.crests) defs.push({ id: 'cr' + c.stage, label: c.label + ' ' + c.stage, st: c.stage, c: '--hist' });
+    }
+    for (const w of [20, 25, 30]) defs.push({ id: 'w' + w, label: 'What if ' + w + ' ft', st: w, c: '--major' });
+    return defs;
+  }
+  function buildChips() {
+    chipsEl.innerHTML = '';
+    for (const d of chipDefs()) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = d.label; b.dataset.id = d.id;
+      b.style.setProperty('--c', 'var(' + d.c + ')'); b.disabled = d.st == null;
+      b.addEventListener('click', () => { chosen = d.id; userMoved = d.id !== 'now'; setK(idxOf(d.st), 'chip'); });
+      chipsEl.append(b);
+    }
+    markChips();
+  }
+  function markChips() { for (const b of chipsEl.children) b.setAttribute('aria-pressed', String(b.dataset.id === chosen)); }
+
+  function onData(first) {
+    if (!ready) return;
+    buildChips();
+    const live = liveStage();
+    if (!userMoved && live != null) { chosen = 'now'; setK(idxOf(live), 'chip'); }
+    else if (first) setK(k, 'init');
+    else renderStats();
+  }
+
+  // interaction
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty, moved: false }; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; cv.classList.add('drag'); }
+    if (drag.moved) { view.tx = drag.tx + dx; view.ty = drag.ty + dy; requestAnimationFrame(draw); }
+  });
+  cv.addEventListener('pointerup', e => {
+    cv.classList.remove('drag'); const d = drag; drag = null; if (!d || d.moved || !ready) return;
+    const rct = cv.getBoundingClientRect(), gx = (e.clientX - rct.left - view.tx) / view.s, gy = (e.clientY - rct.top - view.ty) / view.s;
+    const mx = gx * res, my = gy * res;
+    const t = L.transects.reduce((m, t) => Math.hypot(t.x - mx, t.y - my) < Math.hypot(m.x - mx, m.y - my) ? t : m);
+    if (Math.hypot(t.x - mx, t.y - my) > 450) { probe = null; msgEl.textContent = 'Click closer to the river to measure it.'; draw(); return; }
+    setProbe(t);
+  });
+  function zoomAt(f, cx, cy) { const s2 = Math.max(0.05, Math.min(8, view.s * f)); const r = s2 / view.s; view.tx = cx - (cx - view.tx) * r; view.ty = cy - (cy - view.ty) * r; view.s = s2; draw(); }
+  cv.addEventListener('wheel', e => { e.preventDefault(); const r = cv.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  $('fmIn').addEventListener('click', () => zoomAt(1.5, cv.clientWidth / 2, cv.clientHeight / 2));
+  $('fmOutZ').addEventListener('click', () => zoomAt(1 / 1.5, cv.clientWidth / 2, cv.clientHeight / 2));
+  $('fmTown').addEventListener('click', () => fit('town'));
+  $('fmAll').addEventListener('click', () => fit('all'));
+  let rq = 0;
+  range.addEventListener('input', () => { userMoved = true; const v = parseFloat(range.value); cancelAnimationFrame(rq); rq = requestAnimationFrame(() => setK(idxOf(v), 'slider')); });
+  addEventListener('resize', () => requestAnimationFrame(draw));
+
+  load();
+  return { onData: () => onData(false), widthAt: (i, kk) => widthAt(L.transects[i], kk), stageIndex: () => k, ready: () => ready, view: () => ({ ...view, res }) };
+})();
+
+function msToNext27(now) {
+  const m = now.getMinutes() + now.getSeconds() / 60 + now.getMilliseconds() / 60000;
+  return ((m < 27 ? 27 : 87) - m) * 60000;
+}
+
+$('refresh').addEventListener('click', () => liveRefresh(true));
+
+(function boot() {
+  render();
+  liveRefresh();
+  // New readings arrive about once an hour (USGS a bit after :10, NWS at :24), so refresh at :27.
+  const tick = () => { if (!document.hidden) liveRefresh(); };
+  (function schedule() { setTimeout(() => { tick(); schedule(); }, msToNext27(new Date())); })();
+  setInterval(renderMode, 60 * 1000);
+})();
+</script>
+
+</body>
+</html>
