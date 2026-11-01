@@ -146,7 +146,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
   <section class="card" id="floodmap">
     <div class="fm-head">
       <h2>How wide it gets</h2>
-      <p>Estimated water edge from 2018 USGS LiDAR, San Juan River Village down to the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
+      <p>Estimated water edge from 2018 USGS LiDAR, San Juan River Village down to about 2½ miles below the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
     </div>
     <div class="fm-controls">
       <div class="fm-stage">
@@ -268,6 +268,9 @@ const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: DEN, weekday: 'shor
 const fmtClock = new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
 const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: DEN, weekday: 'short', month: 'short', day: 'numeric' });
 const fmtYear = new Intl.DateTimeFormat('en-US', { timeZone: DEN, month: 'short', day: 'numeric', year: 'numeric' });
+// NWS stores old crests as a bare date at 00:00 UTC; showing that in Denver time would roll it back a day.
+const fmtYearUTC = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+const crestDate = t => (t % 864e5 === 0 ? fmtYearUTC : fmtYear).format(t);
 const CAT_COLOR = { action: '--act', minor: '--minor', moderate: '--mod', major: '--major' };
 const CAT_NAME = { action: 'Action stage', minor: 'Minor flood', moderate: 'Moderate flood', major: 'Major flood' };
 
@@ -361,7 +364,7 @@ function refLines() {
   const n = snap && snap.nws; if (!n) return [];
   const out = [];
   for (const k of ['action', 'minor', 'moderate', 'major']) if (n.cats[k]) out.push({ ft: n.cats[k].stage, label: CAT_NAME[k], c: CAT_COLOR[k], note: n.cats[k].flow ? cfs(n.cats[k].flow) + ' cfs' : '' });
-  for (const c of n.crests) out.push({ ft: c.stage, label: c.label, c: '--hist', hist: true, note: fmtYear.format(c.t) + (c.flow ? ' · ' + cfs(c.flow) + ' cfs' : '') + (c.oldDatum ? ' · old gauge datum, not directly comparable' : '') + (c.prelim ? ' · preliminary' : '') });
+  for (const c of n.crests) out.push({ ft: c.stage, label: c.label, c: '--hist', hist: true, note: crestDate(c.t) + (c.flow ? ' · ' + cfs(c.flow) + ' cfs' : '') + (c.oldDatum ? ' · old gauge datum, not directly comparable' : '') + (c.prelim ? ' · preliminary' : '') });
   const f = n.forecast;
   if (f) out.push({ ft: f.peak.stage, label: 'NWS forecast peak', c: '--fc', dash: true, note: fmtTime.format(f.peak.t) + (f.peak.flow ? ' · ' + cfs(f.peak.flow) + ' cfs' : '') + ' · issued ' + fmtClock.format(f.issued) + ' ' + fmtDay.format(f.issued) });
   return out.sort((a, b) => b.ft - a.ft);
