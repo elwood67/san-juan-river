@@ -141,8 +141,8 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
   <ul class="legend" id="legend"></ul>
 
   <section class="card">
-    <h2>Last 7 days</h2>
-    <svg id="spark" viewBox="0 0 900 220" role="img" aria-label="Gauge height over the last seven days, with the NWS forecast"></svg>
+    <h2>Last 14 days</h2>
+    <svg id="spark" viewBox="0 0 900 220" role="img" aria-label="Gauge height over the last 14 days, with the NWS forecast"></svg>
   </section>
 
   <section class="card" id="floodmap">
@@ -193,7 +193,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 <script>
 // Shared parsers: used verbatim inside the page and in the verification run.
 const SRC = {
-  usgs: 'https://waterservices.usgs.gov/nwis/iv/?sites=09342500&parameterCd=00060,00065&period=P7D&format=rdb',
+  usgs: 'https://waterservices.usgs.gov/nwis/iv/?sites=09342500&parameterCd=00060,00065&period=P14D&format=rdb',
   gauge: 'https://api.water.noaa.gov/nwps/v1/gauges/PSPC2',
   fcst: 'https://api.water.noaa.gov/nwps/v1/gauges/PSPC2/stageflow/forecast'
 };
@@ -409,25 +409,39 @@ function renderSpark() {
     el('text', { x: pl - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = v;
   }
   // flood lines in range
-  for (const k of ['action', 'minor', 'moderate', 'major']) if (cats[k] && cats[k].stage <= hi && cats[k].stage >= lo) {
+  let lastLabelY = Infinity;   // labels go top-down from 'major'; keep at least 14 px between them
+  for (const k of ['major', 'moderate', 'minor', 'action']) if (cats[k] && cats[k].stage <= hi && cats[k].stage >= lo) {
     el('line', { x1: pl, x2: W - pr, y1: y(cats[k].stage), y2: y(cats[k].stage), stroke: 'var(' + CAT_COLOR[k] + ')', 'stroke-width': 1.5, 'stroke-dasharray': '2 4' });
-    el('text', { x: pl + 6, y: y(cats[k].stage) - 5, 'font-size': 11.5, fill: 'var(' + CAT_COLOR[k] + ')', 'font-family': 'var(--mono)' }).textContent = CAT_NAME[k] + ' ' + cats[k].stage;
+    const ly = lastLabelY === Infinity ? y(cats[k].stage) - 5 : Math.max(y(cats[k].stage) - 5, lastLabelY + 14);
+    lastLabelY = ly;
+    el('text', { x: pl + 6, y: ly, 'font-size': 11.5, fill: 'var(' + CAT_COLOR[k] + ')', 'font-family': 'var(--mono)' }).textContent = CAT_NAME[k] + ' ' + cats[k].stage;
   }
-  // day ticks (midnight Denver)
-  const seen = new Set();
+  // day ticks (midnight Denver); dates, and every other day when the span is long
+  const seen = new Set(), hourFmt = new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: 'numeric', hourCycle: 'h23' });
+  const mdFmt = new Intl.DateTimeFormat('en-US', { timeZone: DEN, month: 'short', day: 'numeric' });
+  const every = (t1 - t0) / 864e5 > 10 ? 2 : 1; let nDay = 0;
   for (let t = t0; t <= t1; t += 36e5) {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: 'numeric', hourCycle: 'h23' }).format(t);
     const d = fmtDay.format(t);
-    if (parts === '00' && !seen.has(d)) {
+    if (hourFmt.format(t) === '00' && !seen.has(d)) {
       seen.add(d);
       el('line', { x1: x(t), x2: x(t), y1: pt, y2: H - pb, stroke: 'var(--line)', 'stroke-width': 1 });
-      el('text', { x: x(t) + 4, y: H - 9, 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = d.replace(/,.*/, '');
+      if (nDay++ % every === 0 && x(t) + 46 < W - pr) el('text', { x: x(t) + 4, y: H - 9, 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = mdFmt.format(t);
     }
   }
-  // area + line
-  const path = obs.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
-  el('path', { d: path + ` L${x(obs[obs.length - 1][0]).toFixed(1)} ${H - pb} L${x(t0).toFixed(1)} ${H - pb} Z`, fill: 'var(--water)', opacity: .18 });
-  el('path', { d: path, fill: 'none', stroke: 'var(--water)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+  // area + line, broken wherever readings are missing for more than 45 minutes (e.g. USGS "Eqp" outages)
+  const segs = [];
+  obs.forEach((p, i) => { if (!i || p[0] - obs[i - 1][0] > 45 * 60e3) segs.push([]); segs[segs.length - 1].push(p); });
+  for (const sg of segs) {
+    const d = sg.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+    el('path', { d: d + ` L${x(sg[sg.length - 1][0]).toFixed(1)} ${H - pb} L${x(sg[0][0]).toFixed(1)} ${H - pb} Z`, fill: 'var(--water)', opacity: .18 });
+    el('path', { d, fill: 'none', stroke: 'var(--water)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+  }
+  for (let i = 1; i < segs.length; i++) {
+    const a = segs[i - 1][segs[i - 1].length - 1], b2 = segs[i][0];
+    if (b2[0] - a[0] < 2 * 36e5) continue;
+    const mx = (x(a[0]) + x(b2[0])) / 2;
+    el('text', { x: mx, y: H - pb - 6, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = 'no data ' + Math.round((b2[0] - a[0] - 15 * 60e3) / 36e5 * 2) / 2 + ' h';   // span of the missing 15-minute readings
+  }
   if (fc.length) {
     const last = obs[obs.length - 1];
     const fpath = 'M' + x(last[0]).toFixed(1) + ' ' + y(last[1]).toFixed(1) + ' ' + fc.filter(p => p[0] > last[0]).map(p => 'L' + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
@@ -438,7 +452,12 @@ function renderSpark() {
       const tx = el('text', { x: x(pk.t), y: y(pk.stage) - 10, 'text-anchor': x(pk.t) > W - 120 ? 'end' : 'middle', 'font-size': 12.5, 'font-weight': 600, fill: 'var(--fc)', 'font-family': 'var(--body)' });
       tx.textContent = 'Forecast ' + ft2(pk.stage) + ' ft';
     }
-    el('text', { x: x(last[0]) + 6, y: pt + 12, 'font-size': 11.5, fill: 'var(--fc)', 'font-family': 'var(--mono)' }).textContent = 'NWS forecast →';
+    el('text', { x: x(last[0]) + 6, y: H - pb - 6, 'font-size': 11.5, fill: 'var(--fc)', 'font-family': 'var(--mono)' }).textContent = 'NWS forecast →';
+  }
+  const pkObs = obs.reduce((m, p) => (p[1] > m[1] ? p : m), obs[0]);
+  if (pkObs[1] >= (cats.action ? cats.action.stage : Infinity) && pkObs !== obs[obs.length - 1]) {
+    el('circle', { cx: x(pkObs[0]), cy: y(pkObs[1]), r: 4, fill: 'var(--water)' });
+    el('text', { x: x(pkObs[0]), y: y(pkObs[1]) - 9, 'text-anchor': x(pkObs[0]) < pl + 70 ? 'start' : 'middle', 'font-size': 12, 'font-weight': 600, fill: 'var(--fg)', 'font-family': 'var(--body)' }).textContent = 'Peak ' + ft2(pkObs[1]) + ' ft · ' + mdFmt.format(pkObs[0]);
   }
   const L = obs[obs.length - 1];
   el('circle', { cx: x(L[0]), cy: y(L[1]), r: 5, fill: 'var(--water)', stroke: 'var(--panel)', 'stroke-width': 2 });
@@ -602,7 +621,7 @@ async function liveRefresh(manual) {
     next.usgs = Object.assign({ fetchedAt: Date.now(), source: 'usgs' }, parseUsgsRdb(await getText(SRC.usgs)));
   } catch (e) {
     try {
-      const obs = parseNwsObserved(JSON.parse(await getText(NWS_OBS)), 7);
+      const obs = parseNwsObserved(JSON.parse(await getText(NWS_OBS)), 14);
       next.usgs = Object.assign({ fetchedAt: Date.now() }, obs);
       errs.usgs = (e.message || String(e)) + '. Showing NWS’s copy of the same gauge instead.';
     } catch (e2) { errs.usgs = (e.message || String(e)) + '; the NWS backup failed too (' + (e2.message || e2) + ').'; }
