@@ -71,6 +71,7 @@ button[disabled]{opacity:.5;cursor:progress}
 .mode b{color:var(--fg);font-weight:600}
 .official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
 .official a{color:inherit}
+.cadence{flex-basis:100%;font-size:13px;color:var(--muted);margin-top:-4px}
 .fb{flex-basis:100%;font-size:13.5px;font-weight:600;min-height:1.2em}
 .errs{display:grid;gap:6px}
 .err{border:1.5px solid var(--mod);color:var(--fg);background:color-mix(in srgb,var(--mod) 10%,var(--panel));border-radius:8px;padding:8px 12px;font-size:13.5px}
@@ -147,6 +148,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     <button id="refresh" type="button">Refresh</button>
     <div class="mode" id="mode">Starting up…</div>
     <div class="fb" id="fb" role="status"></div>
+    <div class="cadence" id="cadence">The gauge sends new readings once an hour, four 15-minute readings at a time. They usually arrive about 25 minutes past the hour, occasionally later.</div>
   </div>
   <div class="errs" id="errs"></div>
 
@@ -368,6 +370,8 @@ function renderMode() {
   if (snap && snap.usgs) parts.push('readings fetched ' + ago(snap.usgs.fetchedAt));
   if (snap && snap.nws) parts.push('NWS fetched ' + ago(snap.nws.fetchedAt));
   el.innerHTML = parts.join(' · ') + (modeNote ? '<br>' + modeNote : '');
+  const next = new Date(Date.now() + msToNext27(new Date()));
+  $('cadence').textContent = 'The gauge sends new readings once an hour, four 15-minute readings at a time. They usually arrive about 25 minutes past the hour, occasionally later. This page checks automatically at ' + fmtClock.format(next).replace(/ M[SD]T$/, '') + '; refreshing before then usually won\u2019t find anything new.';
   const b = $('refresh');
   b.disabled = busy;
   b.textContent = busy ? 'Fetching…' : 'Refresh';
