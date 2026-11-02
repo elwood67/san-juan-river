@@ -96,6 +96,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .fm-head p{margin:0;color:var(--muted);font-size:13.5px;max-width:62ch}
 .fm-controls{display:grid;gap:10px;margin:12px 0}
 .fm-stage{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.fm-snap{font-size:13px;color:var(--muted);flex-basis:100%;margin-top:-6px;min-height:1.2em}
 .fm-stage output{font-family:var(--display);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;min-width:4.6em}
 .fm-stage input[type=range]{flex:1 1 320px;accent-color:var(--water);min-width:0}
 .fm-chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -161,11 +162,12 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
   <section class="card" id="floodmap">
     <div class="fm-head">
       <h2>How wide it gets</h2>
-      <p>Estimated water edge from 2018 USGS LiDAR, San Juan River Village down to about 2½ miles below the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
+      <p>Estimated water edge from 2018 USGS LiDAR, from about 2 miles above San Juan River Village down to about 2½ miles below the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
     </div>
     <div class="fm-controls">
       <div class="fm-stage">
         <output id="fmOut" for="fmRange">– ft</output>
+        <span class="fm-snap" id="fmSnap"></span>
         <input type="range" id="fmRange" min="4" max="30" step="0.1" value="6.3" aria-label="River stage in feet" disabled>
       </div>
       <div class="fm-chips" id="fmChips"></div>
@@ -192,6 +194,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
       <li>A model, not an official flood map: it raises the water the same amount along the whole reach and ignores bridges, debris and how fast the water moves.</li>
       <li>Checked against NWS flood notes for this gauge: River Center Park and the Hermosa St backyards flood within a foot of 11 ft as NWS says; the Hot Springs Blvd &amp; San Juan St lot floods about 1 ft earlier than NWS says (16.2 ft), which fits what was seen on Oct 23 2026, when it flooded at the 15.02 ft crest.</li>
       <li>The ground model is from 2018 and has buildings removed, so “water at its walls” means water reaches the building, not how deep it is inside. Channel changes since 2018 aren’t captured.</li>
+      <li>Around San Juan River Village, about 8 river miles above the gauge, the model reaches homes earlier than NWS describes: NWS says yards there flood at 10.3 ft, but the model has the first homes reached at about 6–7 ft. Treat that area as overestimated.</li>
       <li>The 1911 level was measured on an older gauge datum, so its line here is approximate.</li>
       <li>Above about 18 ft these are what-ifs beyond anything recorded. Read them as the ground that sits that high above the river, not as a forecast: at those levels side creeks, bridges and the valley shape matter more than this model allows.</li>
     </ul>
@@ -694,11 +697,26 @@ const FM = (() => {
     return { g, w: bmp.width, h: bmp.height };
   }
 
+  // Phones (iPhone Safari especially) can't hold a canvas this big; test before using the full 2 m map.
+  function canHold(w, h) {
+    try {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); if (!x) return false;
+      x.fillStyle = '#fff'; x.fillRect(w - 1, h - 1, 1, 1);
+      const ok = x.getImageData(w - 1, h - 1, 1, 1).data[3] === 255;
+      c.width = c.height = 0; return ok;
+    } catch (e) { return false; }
+  }
+  let light = false;
   async function load() {
     try {
-      const [lj, wa, sh] = await Promise.all([fetch('map/layers.json').then(r => { if (!r.ok) throw new Error('layers HTTP ' + r.status); return r.json(); }), decodeGray('map/water.png'), decodeGray('map/shade.jpg')]);
-      L = lj; S = L.meta.stages; res = L.meta.res; Wd = wa.w; Ht = wa.h;
-      if (Wd !== L.meta.w || Ht !== L.meta.h || sh.w !== Wd || sh.h !== Ht) throw new Error('map layers have mismatched sizes');
+      const lj = await fetch('map/layers.json').then(r => { if (!r.ok) throw new Error('layers HTTP ' + r.status); return r.json(); });
+      const alt = lj.meta.alt;
+      light = !!alt && !canHold(lj.meta.w, lj.meta.h);
+      const want = light ? { res: alt.res, w: alt.w, h: alt.h, water: alt.water, shade: alt.shade } : { res: lj.meta.res, w: lj.meta.w, h: lj.meta.h, water: 'map/water.png', shade: 'map/shade.jpg' };
+      const [wa, sh] = await Promise.all([decodeGray(want.water), decodeGray(want.shade)]);
+      L = lj; S = L.meta.stages; res = want.res; Wd = wa.w; Ht = wa.h;
+      if (Wd !== want.w || Ht !== want.h || sh.w !== Wd || sh.h !== Ht) throw new Error('map layers have mismatched sizes');
       fidx = wa.g; shade = sh.g;
       // counting sort of wet cells by first-wet index
       const cnt = new Uint32Array(S.length + 1);
@@ -712,8 +730,8 @@ const FM = (() => {
         const v = fidx[i] === 255 ? 0 : shade[i];
         d[j] = v * 0.93 + 8; d[j + 1] = v * 0.93 + 10; d[j + 2] = v * 0.9 + 12; d[j + 3] = fidx[i] === 255 ? 70 : 255;
       }
-      window.__fm = { counts: Array.from(cnt), wetTotal: order.length, w: Wd, h: Ht, stages: S };
-      ready = true; range.disabled = false; msgEl.textContent = 'Click the river to measure its width at the level shown.';
+      window.__fm = { counts: Array.from(cnt), wetTotal: order.length, w: Wd, h: Ht, stages: S, light };
+      ready = true; range.disabled = false; msgEl.textContent = 'Click the river to measure its width at the level shown.' + (light ? ' (Lighter 4 m map on this device.)' : '');
       buildChips(); fit('town'); onData(true);
     } catch (e) {
       failed = true; msgEl.textContent = 'The map layers didn’t load (' + (e.message || e) + '). The rest of the page still works.';
@@ -821,8 +839,11 @@ const FM = (() => {
     draw();
   }
 
-  function setK(newK, why) {
+  function setK(newK, why, wanted) {
     k = newK; range.value = stageAt(k).toFixed(1); out.textContent = ft(stageAt(k)) + ' ft';
+    // the model has 0.1 ft steps up to 18.5 ft and 0.5 ft steps above; say so when a level gets rounded
+    const snapEl = $('fmSnap');
+    snapEl.textContent = wanted != null && Math.abs(wanted - stageAt(k)) >= 0.05 ? 'Showing ' + ft(stageAt(k)) + ' ft, the nearest computed level to ' + wanted.toFixed(2) + ' ft' : '';
     if (why !== 'chip') chosen = null;
     renderStats(); markChips(); if (probe) setProbe(probe.t); else draw();
   }
@@ -863,7 +884,7 @@ const FM = (() => {
     for (const d of chipDefs()) {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = d.label; b.dataset.id = d.id;
       b.style.setProperty('--c', 'var(' + d.c + ')'); b.disabled = d.st == null;
-      b.addEventListener('click', () => { chosen = d.id; userMoved = d.id !== 'now'; setK(idxOf(d.st), 'chip'); });
+      b.addEventListener('click', () => { chosen = d.id; userMoved = d.id !== 'now'; setK(idxOf(d.st), 'chip', d.st); });
       chipsEl.append(b);
     }
     markChips();
@@ -874,7 +895,9 @@ const FM = (() => {
     if (!ready) return;
     buildChips();
     const live = liveStage();
-    if (!userMoved && live != null) { chosen = 'now'; setK(idxOf(live), 'chip'); }
+    const pk = snap && snap.nws && snap.nws.forecast ? snap.nws.forecast.peak.stage : null;
+    if (!userMoved && live != null) { chosen = 'now'; setK(idxOf(live), 'chip', live); }
+    else if (chosen === 'fc' && pk != null) setK(idxOf(pk), 'chip', pk);   // follow a new NWS forecast
     else if (first) setK(k, 'init');
     else renderStats();
   }
@@ -902,7 +925,7 @@ const FM = (() => {
   $('fmTown').addEventListener('click', () => fit('town'));
   $('fmAll').addEventListener('click', () => fit('all'));
   let rq = 0;
-  range.addEventListener('input', () => { userMoved = true; const v = parseFloat(range.value); cancelAnimationFrame(rq); rq = requestAnimationFrame(() => setK(idxOf(v), 'slider')); });
+  range.addEventListener('input', () => { userMoved = true; const v = parseFloat(range.value); cancelAnimationFrame(rq); rq = requestAnimationFrame(() => setK(idxOf(v), 'slider', v)); });
   addEventListener('resize', () => requestAnimationFrame(draw));
 
   load();
