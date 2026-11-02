@@ -71,6 +71,9 @@ button[disabled]{opacity:.5;cursor:progress}
 .mode b{color:var(--fg);font-weight:600}
 .official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
 .official a{color:inherit}
+.off-list{margin:6px 0;padding-left:20px;display:grid;gap:3px}
+.off-asof{font-size:12.5px;opacity:.85}
+.official a[href^="tel:"]{white-space:nowrap}
 .cadence{flex-basis:100%;font-size:13px;color:var(--muted);margin-top:-4px}
 .fb{flex-basis:100%;font-size:13.5px;font-weight:600;min-height:1.2em}
 .errs{display:grid;gap:6px}
@@ -124,11 +127,16 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 </style>
 
 <div class="wrap">
-  <aside class="official" aria-label="Official flood information">
-    <b>Unofficial page, built from public USGS and NWS data. Do not use it to decide whether to stay or leave.</b> If you are in the Pagosa Springs area, follow the Town of Pagosa Springs and Archuleta County. As of Nov 1, 2026, mandatory evacuations were in effect for low-lying areas along the San Juan, Rio Blanco, Navajo and Piedra rivers. <b>In danger, call 911.</b>
-    Alerts: text <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town) or <span class="mono">81147</span> to <span class="mono">888777</span> (County).
-    Official river forecast: <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a>.
-    Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.
+  <aside class="official" aria-label="Flood help and information">
+    <b>Unofficial page, built from public USGS and NWS data. Do not use it to decide whether to stay or leave.</b> Follow instructions from the Town of Pagosa Springs and Archuleta County.
+    <ul class="off-list">
+      <li><b>Emergency: call 911.</b></li>
+      <li><b>Help evacuating:</b> <a href="tel:+19707312160">970-731-2160</a></li>
+      <li><b>Archuleta County incident call center:</b> <a href="tel:+19705089928">970-508-9928</a> (8 a.m.–10 p.m.)</li>
+      <li><b>Alerts by text:</b> <span class="mono">81147</span> to <span class="mono">888777</span> (County) or <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town)</li>
+      <li><b>Town updates:</b> <a href="https://www.pagosasprings.co.gov/" target="_blank" rel="noopener">pagosasprings.co.gov</a> · <b>Official river forecast:</b> <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a></li>
+    </ul>
+    <span class="off-asof">Phone numbers from Town and County notices, Nov 1, 2026. Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.</span>
   </aside>
   <header>
     <div>
