@@ -174,10 +174,15 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
 .pb tr.pb-top td{background:color-mix(in srgb,var(--water) 10%,var(--panel))}
 .pb-dim{color:var(--muted)}
 .pb .sm{display:none}
+.pb td.pb-wk{min-width:62px}
+.pb-bars{display:flex;align-items:flex-end;justify-content:flex-end;gap:2px;height:18px;margin-top:3px}
+.pb-bars i{display:block;width:6px;background:var(--water);border-radius:1px}
+.pb-cov{display:block;font:400 10.5px/1.2 var(--body);color:var(--muted)}
 @media (max-width:600px){
   .pb .lg{display:none} .pb .sm{display:inline}
-  .pb th,.pb td{padding:7px 5px} .pb th:first-child,.pb td.pb-rank{display:none}
-  .pb td.pb-name{min-width:0;padding-left:9px} table.pb{font-size:13.5px}
+  .pb th,.pb td{padding:7px 3px} .pb th:first-child,.pb td.pb-rank{display:none} .pb th{letter-spacing:0;font-size:10.5px}
+  .pb td.pb-name{min-width:0;padding-left:8px;word-break:break-word} table.pb{font-size:13px} .pb .pb-stn{font-size:10.5px}
+  .pb td.pb-wk{min-width:44px;padding-right:7px} .pb-bars i{width:4px} .pb-bars{gap:1.5px}
 }
 #pbSort{margin-top:2px}
 .snow-h{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
@@ -369,14 +374,14 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
 
   <section class="card" id="powder">
     <h2>Powder board</h2>
-    <p class="cap pb-lead">Colorado ski areas ranked by snow at the nearest SNOTEL station and the National Weather Service's snowfall forecast for the next 3 days. Tap a heading button to re-sort.</p>
+    <p class="cap pb-lead">Colorado ski areas ranked by snow at the nearest SNOTEL station and the National Weather Service's snowfall forecast for the next 3 and 7 days. Tap a heading button to re-sort.</p>
     <div class="fm-chips" id="pbSort"></div>
     <div class="pb-wrap"><table class="pb">
-      <thead><tr><th class="pb-rank"></th><th>Ski area <span class="pb-stn">nearest SNOTEL station</span></th><th>Depth</th><th><span class="lg">New </span>24 h</th><th><span class="lg">New </span>3 d<span class="lg">ays</span></th><th><span class="lg">Forecast</span><span class="sm">Next</span> 3 d<span class="lg">ays</span></th></tr></thead>
-      <tbody id="pbBody"><tr><td colspan="6" class="pb-dim">Loads when you scroll here…</td></tr></tbody>
+      <thead><tr><th class="pb-rank"></th><th>Ski area <span class="pb-stn">nearest SNOTEL station</span></th><th>Depth</th><th><span class="lg">New </span>24 h</th><th><span class="lg">New </span>3 d<span class="lg">ays</span></th><th><span class="lg">Forecast</span><span class="sm">Next</span> 3 d<span class="lg">ays</span></th><th>7 d<span class="lg">ays</span></th></tr></thead>
+      <tbody id="pbBody"><tr><td colspan="7" class="pb-dim">Loads when you scroll here…</td></tr></tbody>
     </table></div>
     <p class="cap" id="pbMsg"></p>
-    <p class="cap"><span id="pbAsOf"></span> "New" is the rise in snow depth at the station, which undercounts a storm a little because fresh snow settles as it piles up; "settled" means the depth went down. Changes under 2″ show as 0″, since depth sensors wobble about an inch day to day. Station depth is natural snow in a forest clearing, not a resort's groomed base. Forecasts are for the resort's NWS grid square (about 2.5 km). Always check the resort's own snow report.</p>
+    <p class="cap"><span id="pbAsOf"></span> "New" is the rise in snow depth at the station, which undercounts a storm a little because fresh snow settles as it piles up; "settled" means the depth went down. Changes under 2″ show as 0″, since depth sensors wobble about an inch day to day. Station depth is natural snow in a forest clearing, not a resort's groomed base. Forecasts are for the resort's NWS grid square (about 2.5 km); the 7-day column adds up today and the next six days, with a small bar per day (hover or press for the amounts). Forecasts past about 3 days are much less certain. Always check the resort's own snow report.</p>
   </section>
 
 
@@ -1641,8 +1646,8 @@ const PB = (() => {
     'Purgatory': 'GJT/114,35', 'Silverton Mountain': 'GJT/121,46', 'Ski Cooper': 'GJT/175,108', 'Snowmass': 'GJT/152,102', 'Steamboat': 'GJT/163,159',
     'Sunlight': 'GJT/139,113', 'Telluride': 'GJT/115,48', 'Vail': 'GJT/174,119', 'Winter Park': 'BOU/36,70', 'Wolf Creek': 'PUB/16,35'
   };
-  const SORTS = [['depth', 'Deepest'], ['new24', 'New, 24 h'], ['new72', 'New, 3 days'], ['fc', 'Coming, 3 days']];
-  let rows = [], sortKey = 'depth', started = false, snotelDay = null, fcIssued = null;
+  const SORTS = [['depth', 'Deepest'], ['new24', 'New, 24 h'], ['new72', 'New, 3 days'], ['fc', 'Coming, 3 days'], ['fc7', 'Coming, 7 days']];
+  let dayNames = [], rows = [], sortKey = 'depth', started = false, snotelDay = null, fcIssued = null;
   const isoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: DEN }).format(t);
   const dayLabel = iso => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(Date.parse(iso + 'T12:00:00Z'));
   const addDays = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
@@ -1665,6 +1670,15 @@ const PB = (() => {
     return tot * mult;
   }
 
+  // seven Denver-day snowfall totals; flags a forecast that stops short of the last day
+  function week(f, edges) {
+    if (!f || !f.snowfallAmount) return { fc7: null, days: null, cover: null };
+    const days = edges.slice(0, 7).map((a, k) => snowInches(f.snowfallAmount, a, edges[k + 1]));
+    const ends = (f.snowfallAmount.values || []).map(v => { const [st, du] = String(v.validTime).split('/'); return Date.parse(st) + durMs(du); });
+    const dataEnd = ends.length ? Math.max(...ends) : 0;
+    const cover = dataEnd >= edges[7] - 36e5 ? null : Math.max(0, (dataEnd - edges[0]) / 864e5);
+    return { fc7: days.reduce((a, b) => a + b, 0), days, cover };
+  }
   async function load() {
     if (started) return; started = true;
     $('pbMsg').textContent = 'Loading snow readings and forecasts…';
@@ -1674,6 +1688,9 @@ const PB = (() => {
     try { j = JSON.parse(await getText('https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=' + trips.join(',') + '&elements=SNWD&duration=DAILY&beginDate=' + begin + '&endDate=' + end)); }
     catch (e) { $('pbMsg').textContent = 'SNOTEL readings unavailable right now (' + (e.message || e) + ').'; }
     const now = Date.now(), to = now + 72 * 36e5;
+    const midnight = iso => [-7, -6].map(h => Date.parse(iso + 'T00:00:00' + (h === -7 ? '-07:00' : '-06:00'))).find(t => new Intl.DateTimeFormat('en-US', { timeZone: DEN, hour: '2-digit', hourCycle: 'h23' }).format(t) === '00');
+    const today = isoDay(now), edges = [now].concat([1, 2, 3, 4, 5, 6, 7].map(k => midnight(addDays(today, k))));
+    dayNames = [0, 1, 2, 3, 4, 5, 6].map(k => k === 0 ? 'Today' : new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(Date.parse(addDays(today, k) + 'T12:00:00Z')));
     const fcs = await Promise.allSettled(resorts.map(r => getText('https://api.weather.gov/gridpoints/' + GRID[r[0]]).then(t => JSON.parse(t).properties)));
     rows = resorts.map(([name, la, lo, trip, sname, km], i) => {
       const s = j.find(x => x.stationTriplet === trip), D = s && s.data.find(e => e.stationElement && e.stationElement.elementCode === 'SNWD');
@@ -1685,7 +1702,7 @@ const PB = (() => {
       if (last && (!snotelDay || last.date < snotelDay)) snotelDay = last.date;
       return { name, sname, km, depth: last ? last.value : null, date: last ? last.date : null,
         new24: last && d1 ? last.value - d1.value : null, new72: last && d3 ? last.value - d3.value : null,
-        fc: f ? snowInches(f.snowfallAmount, now, to) : null };
+        fc: f ? snowInches(f.snowfallAmount, now, to) : null, ...week(f, edges) };
     });
     const nf = rows.filter(r => r.fc == null).length;
     $('pbMsg').textContent = nf === rows.length ? 'NWS forecasts unavailable right now.' : '';
@@ -1694,6 +1711,13 @@ const PB = (() => {
 
   const fmtNew = v => v == null ? '–' : v >= 2 ? '+' + Math.round(v) + '″' : v <= -2 ? '<span class="pb-dim">settled</span>' : '0″';   // depth sensors wobble ~1″ a day
   const fmtFc = v => v == null ? '–' : v < 0.25 ? '0″' : v < 1 ? '<1″' : Math.round(v) + '″';
+  // tiny day-by-day bars; height scales to the snowiest single day on the board (at least 6″)
+  function bars(days) {
+    if (!days) return '';
+    const top = Math.max(6, ...rows.filter(r => r.days).flatMap(r => r.days));
+    const tip = days.map((v, k) => dayNames[k] + ' ' + (v < 0.25 ? '0' : v < 1 ? '<1' : Math.round(v)) + '″').join(' · ');
+    return '<span class="pb-bars" title="' + tip + '" aria-label="' + tip + '">' + days.map(v => '<i style="height:' + Math.max(v > 0.25 ? 2 : 1, Math.round(v / top * 18)) + 'px' + (v > 0.25 ? '' : ';opacity:.35') + '"></i>').join('') + '</span>';
+  }
   function render() {
     for (const b of document.querySelectorAll('#pbSort button')) b.setAttribute('aria-pressed', String(b.dataset.k === sortKey));
     const val = r => r[sortKey] == null ? -Infinity : r[sortKey];
@@ -1701,7 +1725,8 @@ const PB = (() => {
     const top = sorted.length && val(sorted[0]) > 0 ? sorted[0] : null;
     $('pbBody').innerHTML = sorted.map((r, i) => '<tr' + (r === top ? ' class="pb-top"' : '') + '><td class="pb-rank">' + (i + 1) + '</td><td class="pb-name">' + r.name +
       '<span class="pb-stn">' + r.sname + ' · ' + r.km + ' km' + (r.km > 15 ? ' <i>(far, rough guide)</i>' : '') + '</span></td>' +
-      '<td>' + (r.depth == null ? '–' : r.depth + '″') + '</td><td>' + fmtNew(r.new24) + '</td><td>' + fmtNew(r.new72) + '</td><td class="pb-fc">' + fmtFc(r.fc) + '</td></tr>').join('');
+      '<td>' + (r.depth == null ? '–' : r.depth + '″') + '</td><td>' + fmtNew(r.new24) + '</td><td>' + fmtNew(r.new72) + '</td><td class="pb-fc">' + fmtFc(r.fc) + '</td>' +
+      '<td class="pb-fc pb-wk">' + fmtFc(r.fc7) + (r.cover != null ? '<span class="pb-cov" title="NWS forecast only reaches ' + r.cover.toFixed(1) + ' days ahead">*' + r.cover.toFixed(0) + ' d</span>' : '') + bars(r.days) + '</td></tr>').join('');
     const bits = [];
     if (snotelDay) bits.push('Depth from NRCS SNOTEL daily readings through ' + dayLabel(snotelDay));
     if (fcIssued) bits.push('NWS forecast updated ' + fmtTime.format(fcIssued));
