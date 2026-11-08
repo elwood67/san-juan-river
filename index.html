@@ -93,7 +93,11 @@ button[disabled]{opacity:.5;cursor:progress}
 .jump::-webkit-scrollbar{display:none}
 .jump a{flex:none;font-size:13.5px;font-weight:600;color:var(--fg);text-decoration:none;border:1.5px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px}
 .jump a:hover{border-color:var(--fg)}
-#sec-river,#snowcard,#snowmap,#floodmap,#powder{scroll-margin-top:56px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;padding:4px 0 8px;border-bottom:2px solid var(--fg);margin-top:14px}
+.sec-head h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4.5vw,32px);line-height:1.1;margin:0}
+.sec-head span{font-size:14px;color:var(--muted)}
+#sec-river{margin-top:4px}
+#sec-river,#sec-snow,#snowcard,#snowmap,#floodmap,#powder{scroll-margin-top:56px}
 .official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
 .official a{color:inherit}
 .off-list{margin:6px 0;padding-left:20px;display:grid;gap:3px}
@@ -246,7 +250,8 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   </details>
   <nav class="jump" aria-label="Sections"><a href="#sec-river">River</a><a href="#floodmap">Flood map</a><a href="#snowcard">Snowpack</a><a href="#snowmap">Snow map</a><a href="#powder">Powder board</a></nav>
 
-  <div class="readout" id="sec-river">
+  <div class="sec-head" id="sec-river"><h2>The River</h2><span>San Juan at Pagosa Springs · live gauge, forecast and flood map</span></div>
+  <div class="readout">
     <div class="stat"><div class="k">Gauge height</div><div class="v" id="vStage">–<small>ft</small></div><div class="s" id="sStage">&nbsp;</div></div>
     <div class="stat"><div class="k">Flow</div><div class="v" id="vFlow">–<small>cfs</small></div><div class="s" id="sFlow">&nbsp;</div></div>
     <div class="stat time"><div class="k">Reading taken</div><div class="v" id="vTime">–</div><div class="s" id="sTime">&nbsp;</div></div>
@@ -311,6 +316,7 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
     </ul>
   </section>
 
+  <div class="sec-head" id="sec-snow"><h2>The Snow</h2><span>Wolf Creek, the San Juans and Colorado ski areas</span></div>
   <section class="card" id="snowcard">
     <h2>Wolf Creek snowpack</h2>
     <h3 class="snow-h">Water in the snow</h3>
