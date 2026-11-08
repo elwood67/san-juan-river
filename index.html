@@ -96,6 +96,8 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .snow-top .v{font-family:var(--display);font-weight:700;font-size:30px}
 .snow-top .v small{font-family:var(--body);font-weight:500;font-size:.45em;color:var(--muted);margin-left:4px}
 .snow-top .s{font-size:13.5px;color:var(--muted);min-width:0}
+.snow-top #snowD{flex-basis:100%;margin-top:-2px}
+.snow-top #snowD:empty{display:none}
 .snow-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
 .snow-key i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .snow-key i.dash{background:repeating-linear-gradient(90deg,var(--hist) 0 5px,transparent 5px 9px)}
@@ -181,10 +183,10 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 
   <section class="card" id="snowcard">
     <h2>Wolf Creek snowpack</h2>
-    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div></div>
+    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div><div class="s" id="snowD"></div></div>
     <svg id="snow" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow water equivalent this season, last season and the normal curve"></svg>
     <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i class="dash"></i>Normal (median)</span></div>
-    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it.</p>
+    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in early March, before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings (NRCS doesn't publish one for depth).</p>
   </section>
 
   <section class="card" id="floodmap">
@@ -986,7 +988,7 @@ const FM = (() => {
 const SRC_EXTRA = {
   stats: 'https://waterservices.usgs.gov/nwis/stat/?format=rdb&sites=09342500&statReportType=daily&statTypeCd=all&parameterCd=00060',
   rating: 'https://waterdata.usgs.gov/nwisweb/get_ratings?site_no=09342500&file_type=exsa',
-  snotel: (b, e) => 'https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=874:CO:SNTL&elements=WTEQ&duration=DAILY&beginDate=' + b + '&endDate=' + e + '&centralTendencyType=MEDIAN'
+  snotel: (b, e) => 'https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=874:CO:SNTL&elements=WTEQ,SNWD&duration=DAILY&beginDate=' + b + '&endDate=' + e + '&centralTendencyType=MEDIAN'
 };
 const fmtMD = new Intl.DateTimeFormat('en-US', { timeZone: DEN, month: 'numeric', day: 'numeric' });
 const fmtMon = new Intl.DateTimeFormat('en-US', { timeZone: DEN, month: 'short', day: 'numeric' });
@@ -1052,10 +1054,27 @@ function flowNormalLines(t, q) {
 
 // SNOTEL: water-year start containing date string "YYYY-MM-DD"
 function wyStart(iso) { const y = +iso.slice(0, 4), m = +iso.slice(5, 7); return (m >= 10 ? y : y - 1) + '-10-01'; }
+// Median snow depth (in) by calendar day, Jan 1 - Dec 31 incl. Feb 29. NRCS publishes no normal for depth, so this was
+// computed from Wolf Creek Summit's daily SNWD record, water years 1998-2026 (29 seasons), on Nov 8 2026.
+const SNWD_MEDIAN = [
+  [47,46,47,51,47,54,55,53,48,50,53,54,52,53,53,51,53,56,55,55,55,54,54,53,60,62,59,61,59,59,60],
+  [59,58,64,64,63,64,70,68,71,68,67,68,66,68,71,69,70,71,69,70,69,68,71,70,73,72,70,69,68],
+  [73,72,71,71,76,78,82,80,79,78,77,77,76,80,80,77,77,81,82,81,79,78,78,78,77,78,78,79,80,80,79],
+  [79,79,78,78,77,78,77,78,77,76,75,79,78,75,72,74,76,73,71,73,72,69,69,69,69,68,69,67,66,65],
+  [64,64,62,65,59,60,58,58,56,61,58,60,58,57,54,52,53,50,49,48,46,43,44,42,40,38,34,32,33,31,30],
+  [30,25,22,21,19,22,20,17,12,9,4,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  Array(31).fill(0), Array(31).fill(0), Array(30).fill(0),
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,3,3,3,3,2,4,5,6,6,6,8,8,8],
+  [8,8,7,11,12,11,12,12,14,13,12,13,12,12,13,14,18,17,18,20,22,23,22,22,21,23,24,25,26,27],
+  [26,29,29,30,29,27,30,30,34,33,33,33,34,33,37,40,39,38,39,39,39,40,41,41,45,44,46,47,46,45,47]
+];
 function parseSnotel(j, todayIso) {
-  const v = j && j[0] && j[0].data && j[0].data[0] && j[0].data[0].values;
+  const els = (j && j[0] && j[0].data) || [];
+  const W = els.find(e => e.stationElement && e.stationElement.elementCode === 'WTEQ') || els[0];
+  const D = els.find(e => e.stationElement && e.stationElement.elementCode === 'SNWD');
+  const v = W && W.values;
   if (!Array.isArray(v) || !v.length) throw new Error('SNOTEL returned no values');
-  const tct = j[0].data[0].timingCentralTendencies || {};
+  const tct = W.timingCentralTendencies || {};
   const cur0 = wyStart(todayIso), prev0 = (+cur0.slice(0, 4) - 1) + '-10-01';
   const median = {}, cur = [], prev = [];
   for (const p of v) {
@@ -1066,7 +1085,17 @@ function parseSnotel(j, todayIso) {
   const last = cur.length ? cur[cur.length - 1] : null;
   const lastMed = last ? median[last[0].slice(5)] : null;
   const lastYr = last ? prev.find(p => p[0].slice(5) === last[0].slice(5)) : null;
-  return { cur0, cur, prev, median, last, lastMed: typeof lastMed === 'number' ? lastMed : null, lastYr: lastYr ? lastYr[1] : null,
+  let depth = null;
+  if (D && Array.isArray(D.values) && last) {
+    const dv = D.values.filter(p => typeof p.value === 'number' && p.value >= 0);
+    const now = dv.filter(p => p.date >= cur0).pop();
+    if (now) {
+      const ly = dv.find(p => p.date === (+now.date.slice(0, 4) - 1) + now.date.slice(4));
+      const m = +now.date.slice(5, 7), d = +now.date.slice(8, 10);
+      depth = { date: now.date, value: now.value, lastYr: ly ? ly.value : null, normal: SNWD_MEDIAN[m - 1][d - 1] };
+    }
+  }
+  return { cur0, cur, prev, median, last, depth, lastMed: typeof lastMed === 'number' ? lastMed : null, lastYr: lastYr ? lastYr[1] : null,
     peak: tct.medianPeak || null, meltout: tct.medianMeltout || null };
 }
 
@@ -1101,6 +1130,8 @@ function renderSnow() {
   else if (md != null) bits.push('Normal for ' + day + ' is ' + md.toFixed(1) + ' in, too little for a percentage to mean much');
   if (S.lastYr != null) bits.push('last year on this date: ' + S.lastYr.toFixed(1) + ' in');
   $('snowS').textContent = bits.join(' · ');
+  const dp = S.depth;
+  $('snowD').textContent = dp ? 'Snow depth ' + dp.value + ' in on ' + fmtMon.format(Date.parse(dp.date + 'T12:00:00Z')) + ' · normal about ' + dp.normal + ' in' + (dp.lastYr != null ? ' · last year ' + dp.lastYr + ' in' : '') : '';
 
   const W = 900, H = 200, pl = 44, pr = 14, pt = 14, pb = 26;
   const y0 = +S.cur0.slice(0, 4), base = Date.UTC(y0, 9, 1), end = Date.UTC(y0 + 1, 6, 31);
