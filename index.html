@@ -288,7 +288,7 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   <section class="card" id="floodmap">
     <div class="fm-head">
       <h2>How wide it gets</h2>
-      <p>Estimated water edge from 2018 USGS LiDAR, from about 2 miles above San Juan River Village down to about 2½ miles below the high school, up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
+      <p>Estimated water edge from 2018 USGS LiDAR, from about 2 miles above San Juan River Village down past Trujillo Road to just above where the Rio Blanco joins (about 14 river miles below downtown), up to 30 ft. Drag the slider or pick a level; click the river to measure its width.</p>
     </div>
     <div class="fm-controls">
       <div class="fm-stage">
@@ -321,6 +321,7 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
       <li>Checked against NWS flood notes for this gauge: River Center Park and the Hermosa St backyards flood within a foot of 11 ft as NWS says; the Hot Springs Blvd &amp; San Juan St lot floods about 1 ft earlier than NWS says (16.2 ft), which fits what was seen on Oct 23 2026, when it flooded at the 15.02 ft crest.</li>
       <li>The ground model is from 2018 and has buildings removed, so “water at its walls” means water reaches the building, not how deep it is inside. Channel changes since 2018 aren’t captured.</li>
       <li>Around San Juan River Village, about 8 river miles above the gauge, the model reaches homes earlier than NWS describes: NWS says yards there flood at 10.3 ft, but the model has the first homes reached at about 6–7 ft. Treat that area as overestimated.</li>
+      <li>Below town, down Trujillo Road to the Rio Blanco (up to about 14 river miles below the gauge), nothing has been checked against real flooding the way town has, and the farther from the gauge the rougher it gets: side creeks add water the gauge doesn't see. Treat that stretch as a rough guide only. The map stops just above the Rio Blanco because below it the Pagosa gauge no longer measures all the water.</li>
       <li>The 1911 level was measured on an older gauge datum, so its line here is approximate.</li>
       <li>Above about 18 ft these are what-ifs beyond anything recorded. Read them as the ground that sits that high above the river, not as a forecast: at those levels side creeks, bridges and the valley shape matter more than this model allows.</li>
     </ul>
@@ -939,7 +940,7 @@ const FM = (() => {
         d[j] = v * 0.93 + 8; d[j + 1] = v * 0.93 + 10; d[j + 2] = v * 0.9 + 12; d[j + 3] = fidx[i] === 255 ? 70 : 255;
       }
       window.__fm = { counts: Array.from(cnt), wetTotal: order.length, w: Wd, h: Ht, stages: S, light };
-      ready = true; range.disabled = false; msgEl.textContent = 'Click the river to measure its width at the level shown.' + (light ? ' (Lighter 4 m map on this device.)' : '');
+      ready = true; range.disabled = false; msgEl.textContent = 'Click the river to measure its width at the level shown.' + (light ? ' (Lighter 6 m map on this device.)' : '');
       buildChips(); fit('town'); onData(true);
     } catch (e) {
       failed = true; msgEl.textContent = 'The map layers didn’t load (' + (e.message || e) + '). The rest of the page still works.';
@@ -972,7 +973,8 @@ const FM = (() => {
     if (!ready) return;
     const w = cv.clientWidth, h = cv.clientHeight;
     let x0 = 0, y0 = 0, x1 = Wd, y1 = Ht;
-    if (which === 'town') { const g = L.meta.places.find(p => p.n === 'USGS gauge'); const cx = g.x / res + 250, cy = g.y / res - 120, half = 1300 / res; x0 = cx - half; x1 = cx + half; y0 = cy - half * h / w; y1 = cy + half * h / w; }
+    if (which === 'town') { const g = L.meta.places.find(p => p.n === 'USGS gauge'); const cx = (g.x + 500) / res, cy = (g.y - 240) / res, half = 1300 / res; x0 = cx - half; x1 = cx + half; y0 = cy - half * h / w; y1 = cy + half * h / w; }   // offsets in metres (500 m east, 240 m north of the gauge), so any map resolution frames the same spot
+    else { y0 = -0.02 * Ht; y1 = 1.08 * Ht; }   // whole reach: a little room below so the end label clears the help text
     const s = Math.min(w / (x1 - x0), h / (y1 - y0));
     view = { s, tx: w / 2 - s * (x0 + x1) / 2, ty: h / 2 - s * (y0 + y1) / 2 }; draw();
   }
