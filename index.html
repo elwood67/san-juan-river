@@ -173,6 +173,8 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
 .pb td.pb-fc{color:var(--water);font-weight:700}
 .pb tr.pb-top td{background:color-mix(in srgb,var(--water) 10%,var(--panel))}
 .pb-dim{color:var(--muted)}
+.pb a.rs-link{color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:3px}
+.pb a.rs-link:hover{text-decoration-color:currentColor}
 .pb .sm{display:none}
 .pb td.pb-wk{min-width:62px}
 .pb-bars{display:flex;align-items:flex-end;justify-content:flex-end;gap:2px;height:18px;margin-top:3px}
@@ -381,7 +383,7 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
       <tbody id="pbBody"><tr><td colspan="7" class="pb-dim">Loads when you scroll here…</td></tr></tbody>
     </table></div>
     <p class="cap" id="pbMsg"></p>
-    <p class="cap"><span id="pbAsOf"></span> "New" is the rise in snow depth at the station, which undercounts a storm a little because fresh snow settles as it piles up; "settled" means the depth went down. Changes under 2″ show as 0″, since depth sensors wobble about an inch day to day. Station depth is natural snow in a forest clearing, not a resort's groomed base. Forecasts are for the resort's NWS grid square (about 2.5 km); the 7-day column adds up today and the next six days, with a small bar per day (hover or press for the amounts). Forecasts past about 3 days are much less certain. Always check the resort's own snow report.</p>
+    <p class="cap"><span id="pbAsOf"></span> "New" is the rise in snow depth at the station, which undercounts a storm a little because fresh snow settles as it piles up; "settled" means the depth went down. Changes under 2″ show as 0″, since depth sensors wobble about an inch day to day. Station depth is natural snow in a forest clearing, not a resort's groomed base. Forecasts are for the resort's NWS grid square (about 2.5 km); the 7-day column adds up today and the next six days, with a small bar per day (hover or press for the amounts). Forecasts past about 3 days are much less certain. Always check the resort's own snow report: tap a resort's name to open its official site, where lift status (open or closed) and the snow report are on the home page.</p>
   </section>
 
 
@@ -1442,6 +1444,36 @@ const AVY = (() => {
 })();
 AVY.init();
 
+// Official resort websites (lift status and snow report are on each home page); checked reachable Nov 8 2026
+const RESORT_SITE = {
+  'Arapahoe Basin': 'https://www.arapahoebasin.com/',
+  'Aspen Highlands': 'https://www.aspensnowmass.com/',
+  'Aspen Mountain': 'https://www.aspensnowmass.com/',
+  'Beaver Creek': 'https://www.beavercreek.com/',
+  'Breckenridge': 'https://www.breckenridge.com/',
+  'Buttermilk': 'https://www.aspensnowmass.com/',
+  'Copper Mountain': 'https://www.coppercolorado.com/',
+  'Crested Butte': 'https://www.skicb.com/',
+  'Echo Mountain': 'https://www.echomtn.com/',
+  'Eldora': 'https://www.eldora.com/',
+  'Granby Ranch': 'https://www.granbyranch.com/',
+  'Keystone': 'https://www.keystoneresort.com/',
+  'Loveland': 'https://www.skiloveland.com/',
+  'Monarch': 'https://www.skimonarch.com/',
+  'Powderhorn': 'https://www.powderhorn.com/',
+  'Purgatory': 'https://www.purgatory.ski/',
+  'Silverton Mountain': 'https://www.silvertonmountain.com/',
+  'Ski Cooper': 'https://www.skicooper.com/',
+  'Snowmass': 'https://www.aspensnowmass.com/',
+  'Steamboat': 'https://www.steamboat.com/',
+  'Sunlight': 'https://www.sunlightmtn.com/',
+  'Telluride': 'https://www.tellurideskiresort.com/',
+  'Vail': 'https://www.vail.com/',
+  'Winter Park': 'https://www.winterparkresort.com/',
+  'Wolf Creek': 'https://www.wolfcreekski.com/'
+};
+const resortLink = n => RESORT_SITE[n] ? '<a class="rs-link" href="' + RESORT_SITE[n] + '" target="_blank" rel="noopener" title="' + n + ' official site: lifts open and snow report">' + n + ' ↗</a>' : n;
+
 const SM = (() => {
   const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs, plus the two by Purgatory (NRCS station list, Nov 2026)
     ['874:CO:SNTL', 'Wolf Creek Summit', 10930, 37.47903, -106.80234, 'top'], ['840:CO:SNTL', 'Upper San Juan', 10140, 37.48563, -106.83528, 'left'],
@@ -1564,8 +1596,9 @@ const SM = (() => {
       map.attributionControl.addAttribution('Ski areas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · NRCS SNOTEL');
       for (const [name, la, lo, trip, sname, km, elev] of RESORTS) {
         const { w, d } = latest(trip);
-        const lines = ['<b>' + name + '</b> ski area', 'Nearest SNOTEL: ' + sname + ', ' + km + ' km away, ' + elev.toLocaleString('en-US') + ' ft'].concat(readingLines(w, d));
+        const lines = ['<b>' + name + '</b> ski area', RESORT_SITE[name] ? '<a href="' + RESORT_SITE[name] + '" target="_blank" rel="noopener">Is it open? Lifts &amp; snow report on the official site →</a>' : '', 'Nearest SNOTEL: ' + sname + ', ' + km + ' km away, ' + elev.toLocaleString('en-US') + ' ft'].concat(readingLines(w, d));
         if (!w && !d) lines.push('No recent reading from that station');
+        for (let i = lines.length - 1; i >= 0; i--) if (!lines[i]) lines.splice(i, 1);
         if (km > 15) lines.push('<i>That station is ' + Math.round(km) + ' km away, so treat it as a rough guide for this resort.</i>');
         L.marker([la, lo], { icon, zIndexOffset: -100 }).addTo(map)
           .bindTooltip(name, { permanent: true, direction: 'right', className: 'sm-res', offset: [7, 0] })
@@ -1723,7 +1756,7 @@ const PB = (() => {
     const val = r => r[sortKey] == null ? -Infinity : r[sortKey];
     const sorted = rows.slice().sort((a, b) => val(b) - val(a) || (b.depth || 0) - (a.depth || 0) || a.name.localeCompare(b.name));
     const top = sorted.length && val(sorted[0]) > 0 ? sorted[0] : null;
-    $('pbBody').innerHTML = sorted.map((r, i) => '<tr' + (r === top ? ' class="pb-top"' : '') + '><td class="pb-rank">' + (i + 1) + '</td><td class="pb-name">' + r.name +
+    $('pbBody').innerHTML = sorted.map((r, i) => '<tr' + (r === top ? ' class="pb-top"' : '') + '><td class="pb-rank">' + (i + 1) + '</td><td class="pb-name">' + resortLink(r.name) +
       '<span class="pb-stn">' + r.sname + ' · ' + r.km + ' km' + (r.km > 15 ? ' <i>(far, rough guide)</i>' : '') + '</span></td>' +
       '<td>' + (r.depth == null ? '–' : r.depth + '″') + '</td><td>' + fmtNew(r.new24) + '</td><td>' + fmtNew(r.new72) + '</td><td class="pb-fc">' + fmtFc(r.fc) + '</td>' +
       '<td class="pb-fc pb-wk">' + fmtFc(r.fc7) + (r.cover != null ? '<span class="pb-cov" title="NWS forecast only reaches ' + r.cover.toFixed(1) + ' days ahead">*' + r.cover.toFixed(0) + ' d</span>' : '') + bars(r.days) + '</td></tr>').join('');
