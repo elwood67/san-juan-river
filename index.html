@@ -1245,13 +1245,14 @@ function renderSnow() {
 // ---------- snow map: NOAA NOHRSC snow depth or NASA satellite photo over USGS topo, with nearby SNOTEL stations ----------
 // Leaflet and the map tiles only load when the card scrolls near the screen.
 const SM = (() => {
-  const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs (NRCS station list, Nov 2026)
+  const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs, plus the two by Purgatory (NRCS station list, Nov 2026)
     ['874:CO:SNTL', 'Wolf Creek Summit', 10930, 37.47903, -106.80234, 'top'], ['840:CO:SNTL', 'Upper San Juan', 10140, 37.48563, -106.83528, 'left'],
     ['1325:CO:SNTL', 'Elwood Pass', 11680, 37.40563, -106.64136], ['624:CO:SNTL', 'Middle Creek', 11260, 37.61779, -107.03932],
     ['1160:CO:SNTL', 'Weminuche Creek', 10730, 37.51968, -107.32139], ['580:CO:SNTL', 'Lily Pond', 11070, 37.38028, -106.54823],
     ['1058:CO:SNTL', 'Grayback', 11620, 37.47051, -106.5379], ['394:NM:SNTL', 'Chamita', 8360, 36.95606, -106.65723],
     ['843:CO:SNTL', 'Vallecito', 10740, 37.48524, -107.50748], ['839:CO:SNTL', 'Upper Rio Grande', 9370, 37.72172, -107.25971],
-    ['431:CO:SNTL', 'Cumbres Trestle', 10030, 37.01877, -106.45275], ['797:CO:SNTL', 'Stump Lakes', 11230, 37.47647, -107.63348, 'left']
+    ['431:CO:SNTL', 'Cumbres Trestle', 10030, 37.01877, -106.45275], ['797:CO:SNTL', 'Stump Lakes', 11230, 37.47647, -107.63348, 'left'],
+    ['387:CO:SNTL', 'Cascade #2 (near Purgatory)', 8990, 37.65751, -107.80287], ['780:CO:SNTL', 'Spud Mountain (near Purgatory)', 10660, 37.69883, -107.77841]
   ];
   const NOAA = 'https://mapservices.weather.noaa.gov/raster/rest/services/snow/NOHRSC_Snow_Analysis/MapServer';
   const SAT = ['MODIS_Terra_CorrectedReflectance_TrueColor', 'VIIRS_NOAA20_CorrectedReflectance_TrueColor'];
@@ -1284,7 +1285,8 @@ const SM = (() => {
     try {
       await Promise.all([loadCss('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'), loadJs('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js')]);
     } catch (e) { msg('Map unavailable: ' + e.message + '.'); return; }
-    map = L.map('smap', { scrollWheelZoom: false, zoomSnap: 0.5, attributionControl: true }).setView([37.36, -106.98], window.innerWidth < 600 ? 8.5 : 9);
+    map = L.map('smap', { scrollWheelZoom: false, zoomSnap: 0.5, attributionControl: true });
+    map.fitBounds(L.latLngBounds(STATIONS.map(s => [s[3], s[4]]).concat([[37.2694, -107.0098], [37.2753, -107.8801]])), { paddingTopLeft: [90, 20], paddingBottomRight: [40, 20] });   // room for the town labels on the left
     map.attributionControl.setPrefix(false);
     L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 13, minZoom: 7, attribution: 'USGS The National Map' }).addTo(map);
     const Noaa = L.TileLayer.extend({ getTileUrl(c) {
@@ -1294,7 +1296,7 @@ const SM = (() => {
     } });
     noaaLayer = new Noaa('', { opacity: 0.72, maxZoom: 13, attribution: 'NOAA NOHRSC snow analysis' });
     // town + pass labels
-    for (const [n, la, lo] of [['Pagosa Springs', 37.2694, -107.0098]])   // Wolf Creek Summit station marks the pass
+    for (const [n, la, lo] of [['Pagosa Springs', 37.2694, -107.0098], ['Durango', 37.2753, -107.8801], ['Purgatory', 37.6303, -107.8139]])   // Wolf Creek Summit station marks the pass
       L.circleMarker([la, lo], { radius: 4, color: '#14231f', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }).addTo(map).bindTooltip(n, { permanent: true, direction: 'left', className: 'sm-town', offset: [-6, 0] });
     setMode(mode);
     loadStations();
@@ -1329,7 +1331,7 @@ const SM = (() => {
           else lines.push('Station too new for an NRCS normal');
         }
         if (d) lines.push('Snow depth: <b>' + d.value + ' in</b>');
-        const label = (trip === '874:CO:SNTL' ? 'Wolf Creek Pass ' : '') + (w ? w.value.toFixed(1) + '″' : d.value + ' in deep');
+        const label = (trip === '874:CO:SNTL' ? 'Wolf Creek ' : '') + (w ? w.value.toFixed(1) + '″' : d.value + ' in deep');
         L.circleMarker([la, lo], { radius: 6, color: '#14231f', weight: 2, fillColor: '#f6c344', fillOpacity: 1 }).addTo(map)
           .bindTooltip(label, { permanent: true, direction: dir || 'right', className: 'sm-stn', offset: dir === 'left' ? [-6, 0] : dir === 'top' ? [0, -6] : [6, 0] })
           .bindPopup(lines.join('<br>'));
