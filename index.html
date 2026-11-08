@@ -21,6 +21,7 @@
 </head>
 <body>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -31,6 +32,7 @@
   --water:#2f7d8f; --water2:#1d5b6c; --foam:#e6f4f4;
   --accent:#d9663a;
   --ok:#3c8c5a; --act:#c9a227; --minor:#e07b2e; --mod:#cf4b33; --major:#9b2f63; --hist:#506a86; --fc:#d9663a;
+  --logo-ridge:#3e6a8a; --logo-snow:#8fbcd8; --logo-water:#2f8fbf;
   --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -41,6 +43,7 @@
   --water:#2a7486; --water2:#164a57; --foam:#bfe3e6;
   --accent:#f08a5d;
   --ok:#5fb27e; --act:#e0bc45; --minor:#f0954f; --mod:#ec6b52; --major:#d16a9c; --hist:#8aa6c4; --fc:#f08a5d;
+  --logo-ridge:#8fb3cf; --logo-snow:#e3f0f8; --logo-water:#4fb3d9;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1517; --panel:#142024; --fg:#e2ecea; --muted:#90a39e; --line:#26383b;
@@ -48,10 +51,17 @@
   --water:#2a7486; --water2:#164a57; --foam:#bfe3e6;
   --accent:#f08a5d;
   --ok:#5fb27e; --act:#e0bc45; --minor:#f0954f; --mod:#ec6b52; --major:#d16a9c; --hist:#8aa6c4; --fc:#f08a5d;
+  --logo-ridge:#8fb3cf; --logo-snow:#e3f0f8; --logo-water:#4fb3d9;
   color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:980px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 16px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.prs-mark{width:clamp(58px,13vw,84px);height:auto;flex:none;overflow:visible}
+.prs-mark .ridge,.prs-mark .snow,.prs-mark .water{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
+.prs-mark .ridge{stroke:var(--logo-ridge)} .prs-mark .snow{stroke:var(--logo-snow)} .prs-mark .water{stroke:var(--logo-water)}
+.brand h1{margin:0}
+.brand-sub{font-size:13.5px;letter-spacing:.04em;color:var(--fg);opacity:.7;margin-top:4px}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:2px 0 0;text-wrap:balance}
 .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px;border:1.5px solid currentColor;max-width:100%}
@@ -204,9 +214,17 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
 
 <div class="wrap">
   <header>
-    <div>
-      <div class="eyebrow">USGS 09342500 · NWS PSPC2 · Pagosa Springs, CO</div>
-      <h1>Pagosa River &amp; Snow</h1>
+    <div class="brand">
+      <svg class="prs-mark" viewBox="0 6 116 82" aria-hidden="true" focusable="false">
+        <path class="ridge" d="M4 52 L26 28 L36 38 L56 12 L78 40 L88 32 L112 52"/>
+        <path class="snow" d="M48 22 L56 12 L64 22"/>
+        <path class="water" d="M4 68 Q18 60 32 68 T60 68 T88 68 T112 68"/>
+        <path class="water" d="M16 82 Q30 75 44 82 T72 82 T100 82" opacity=".55"/>
+      </svg>
+      <div>
+        <h1>Pagosa River &amp; Snow</h1>
+        <div class="brand-sub">San Juan River · Pagosa Springs</div>
+      </div>
     </div>
     <span class="chip" id="chip" style="color:var(--muted)">Waiting for data</span>
   </header>
