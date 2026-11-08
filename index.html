@@ -114,6 +114,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .leaflet-tooltip.sm-town{font-weight:500}
 .leaflet-tooltip.sm-stn::before,.leaflet-tooltip.sm-town::before{display:none}
 .leaflet-popup-content{font:13px/1.45 var(--body);color:#14231f}
+#smap .sm-base .leaflet-tile{width:257px!important;height:257px!important}   /* 1px overlap hides seams between solid tiles at fractional zoom */
 .sm-resort i{display:block;width:12px;height:12px;background:#2563c9;border:2px solid #fff;border-radius:3px;box-shadow:0 0 0 1px #14231f}
 .leaflet-tooltip.sm-res{background:rgba(37,99,201,.92);color:#fff;border:0;box-shadow:0 1px 3px rgba(0,0,0,.35);font:600 12px/1.2 var(--body);padding:2px 6px;display:none}
 .leaflet-tooltip.sm-res::before{display:none}
@@ -223,6 +224,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     <div class="sm-bar">
       <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button></div>
       <div class="fm-chips" id="smViews"><button type="button" data-v="local" aria-pressed="true">Pagosa area</button><button type="button" data-v="co" aria-pressed="false">All Colorado</button></div>
+      <div class="fm-chips" id="smUnits"><button type="button" data-u="depth" aria-pressed="true">Show depth</button><button type="button" data-u="water" aria-pressed="false">Show water</button></div>
       <div class="sm-sat" id="smSatBar" hidden><button type="button" id="smPrev" aria-label="Previous day">◀</button><span id="smDay">…</span><button type="button" id="smNext" aria-label="Next day">▶</button></div>
     </div>
     <div class="sm-wrap"><div id="smap" aria-label="Map of snow around Pagosa Springs and Wolf Creek Pass"></div><div class="sm-msg" id="smMsg"></div></div>
@@ -1253,7 +1255,7 @@ function renderSnow() {
 const SM = (() => {
   const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs, plus the two by Purgatory (NRCS station list, Nov 2026)
     ['874:CO:SNTL', 'Wolf Creek Summit', 10930, 37.47903, -106.80234, 'top'], ['840:CO:SNTL', 'Upper San Juan', 10140, 37.48563, -106.83528, 'left'],
-    ['1325:CO:SNTL', 'Elwood Pass', 11680, 37.40563, -106.64136], ['624:CO:SNTL', 'Middle Creek', 11260, 37.61779, -107.03932],
+    ['1325:CO:SNTL', 'Elwood Pass', 11680, 37.40563, -106.64136, 'left'], ['624:CO:SNTL', 'Middle Creek', 11260, 37.61779, -107.03932],
     ['1160:CO:SNTL', 'Weminuche Creek', 10730, 37.51968, -107.32139], ['580:CO:SNTL', 'Lily Pond', 11070, 37.38028, -106.54823],
     ['1058:CO:SNTL', 'Grayback', 11620, 37.47051, -106.5379], ['394:NM:SNTL', 'Chamita', 8360, 36.95606, -106.65723],
     ['843:CO:SNTL', 'Vallecito', 10740, 37.48524, -107.50748], ['839:CO:SNTL', 'Upper Rio Grande', 9370, 37.72172, -107.25971],
@@ -1283,7 +1285,7 @@ const SM = (() => {
   const DEPTH_KEY = [['1–2', '#abc1bf'], ['2–4', '#66c1c4'], ['4–10', '#63a9cb'], ['10–20', '#5079c8'], ['20–39', '#3c3fc2'], ['39–59', '#5720c3'], ['59–98', '#7d01bb'], ['98+', '#b404b1']];
   const isoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: DEN }).format(t);
   const dayLabel = iso => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.parse(iso + 'T12:00:00Z'));
-  let map = null, localBounds = null, noaaLayer = null, satLayer = null, mode = 'depth', satDay = null, satLayerName = SAT[0], started = false;
+  let map = null, localBounds = null, unit = 'depth', stnLabels = [], noaaLayer = null, satLayer = null, mode = 'depth', satDay = null, satLayerName = SAT[0], started = false;
 
   const loadCss = href => new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res; document.head.append(l); });
   const loadJs = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('couldn’t load the map library')); document.head.append(s); });
@@ -1312,10 +1314,10 @@ const SM = (() => {
     localBounds = L.latLngBounds(STATIONS.map(s => [s[3], s[4]]).concat([[37.2694, -107.0098], [37.2753, -107.8801]]));
     map.fitBounds(localBounds, { paddingTopLeft: [90, 40], paddingBottomRight: [40, 20] });   // room for the town labels on the left
     // labels by zoom: resort names only when zoomed in; station and town labels hidden at state scale
-    const zoomClass = () => { const z = map.getZoom(), el = $('smap'); el.classList.toggle('sm-far', z < 8); el.classList.toggle('sm-near', z >= 10); };
+    const zoomClass = () => { const z = map.getZoom(), el = $('smap'); el.classList.toggle('sm-far', z < 7); el.classList.toggle('sm-near', z >= 10); };
     map.on('zoomend', zoomClass); zoomClass();
     map.attributionControl.setPrefix(false);
-    L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 13, minZoom: 5, attribution: 'USGS The National Map' }).addTo(map);
+    L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 13, minZoom: 5, className: 'sm-base', attribution: 'USGS The National Map' }).addTo(map);
     const Noaa = L.TileLayer.extend({ getTileUrl(c) {
       const ts = this.getTileSize(), P = p => L.CRS.EPSG3857.project(this._map.unproject(p, c.z));
       const a = P([c.x * ts.x, c.y * ts.y]), b = P([(c.x + 1) * ts.x, (c.y + 1) * ts.y]);
@@ -1361,10 +1363,12 @@ const SM = (() => {
         const { w, d } = latest(trip);
         if (!w && !d) continue;
         const lines = ['<b>' + name + '</b> · ' + elev.toLocaleString('en-US') + ' ft'].concat(readingLines(w, d));
-        const label = (trip === '874:CO:SNTL' ? 'Wolf Creek ' : '') + (w ? w.value.toFixed(1) + '″' : d.value + ' in deep');
-        L.circleMarker([la, lo], { radius: 6, color: '#14231f', weight: 2, fillColor: '#f6c344', fillOpacity: 1 }).addTo(map)
-          .bindTooltip(label, { permanent: true, direction: dir || 'right', className: 'sm-stn', offset: dir === 'left' ? [-6, 0] : dir === 'top' ? [0, -6] : [6, 0] })
+        const pre = trip === '874:CO:SNTL' ? 'Wolf Creek ' : '';
+        const text = u => pre + (u === 'depth' ? (d ? d.value + '″ deep' : 'no depth') : (w ? w.value.toFixed(1) + '″ water' : 'no water'));
+        const m = L.circleMarker([la, lo], { radius: 6, color: '#14231f', weight: 2, fillColor: '#f6c344', fillOpacity: 1 }).addTo(map)
+          .bindTooltip(text(unit), { permanent: true, direction: dir || 'right', className: 'sm-stn', offset: dir === 'left' ? [-6, 0] : dir === 'top' ? [0, -6] : [6, 0] })
           .bindPopup(lines.join('<br>'));
+        stnLabels.push([m, text]);
       }
       const icon = L.divIcon({ className: 'sm-resort', html: '<i></i>', iconSize: [14, 14], iconAnchor: [7, 7] });
       map.attributionControl.addAttribution('Ski areas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · NRCS SNOTEL');
@@ -1377,10 +1381,16 @@ const SM = (() => {
           .bindTooltip(name, { permanent: true, direction: 'right', className: 'sm-res', offset: [7, 0] })
           .bindPopup(lines.join('<br>'));
       }
-      $('smStn').textContent = 'Yellow dots: NRCS SNOTEL stations, labelled with inches of water in the snow. Blue squares: ski areas (names show when you zoom in); tap one for its nearest SNOTEL station’s reading. Tap any dot for details.';
+      setUnit(unit);
     } catch (e) { $('smStn').textContent = 'Station readings unavailable right now (' + (e.message || e) + ').'; }
   }
 
+  function setUnit(u) {
+    unit = u;
+    for (const b of document.querySelectorAll('#smUnits button')) b.setAttribute('aria-pressed', String(b.dataset.u === u));
+    for (const [m, text] of stnLabels) m.setTooltipContent(text(u));
+    $('smStn').textContent = 'Yellow dots: NRCS SNOTEL stations, labelled with ' + (u === 'depth' ? 'snow depth on the ground' : 'inches of water in the snow') + '. Blue squares: ski areas (names show when you zoom in). Tap any of them for both numbers and the normal. SNOTEL depth is natural, ungroomed snow at the station, so it won’t match a resort’s reported base exactly.';
+  }
   function setMode(m) {
     mode = m;
     for (const b of document.querySelectorAll('#smModes button')) b.setAttribute('aria-pressed', String(b.dataset.m === m));
@@ -1390,7 +1400,7 @@ const SM = (() => {
     else {
       map.removeLayer(noaaLayer);
       if (satLayer) map.removeLayer(satLayer);
-      if (satDay) { satLayer = L.tileLayer(gibs(satLayerName, satDay), { maxNativeZoom: 9, maxZoom: 13, attribution: 'NASA GIBS / ' + (satLayerName.startsWith('MODIS') ? 'MODIS Terra' : 'VIIRS NOAA-20') }).addTo(map); msg(''); }
+      if (satDay) { satLayer = L.tileLayer(gibs(satLayerName, satDay), { maxNativeZoom: 9, maxZoom: 13, className: 'sm-base', attribution: 'NASA GIBS / ' + (satLayerName.startsWith('MODIS') ? 'MODIS Terra' : 'VIIRS NOAA-20') }).addTo(map); msg(''); }
       else msg('Finding the latest satellite pass…');
     }
     renderSatBar();
@@ -1416,6 +1426,7 @@ const SM = (() => {
       if (!map) return;
       if (b.dataset.v === 'co') map.fitBounds(CO_BOUNDS, { padding: [10, 10] }); else map.fitBounds(localBounds, { paddingTopLeft: [90, 40], paddingBottomRight: [40, 20] });
     });
+    for (const b of document.querySelectorAll('#smUnits button')) b.addEventListener('click', () => setUnit(b.dataset.u));
     $('smPrev').addEventListener('click', () => stepDay(-1)); $('smNext').addEventListener('click', () => stepDay(1));
     setMode('depth');
     if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)) { o.disconnect(); start(); } }, { rootMargin: '400px' }).observe($('snowmap'));
