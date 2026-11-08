@@ -96,6 +96,24 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .snow-top .v{font-family:var(--display);font-weight:700;font-size:30px}
 .snow-top .v small{font-family:var(--body);font-weight:500;font-size:.45em;color:var(--muted);margin-left:4px}
 .snow-top .s{font-size:13.5px;color:var(--muted);min-width:0}
+.sm-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:8px}
+.sm-sat{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.sm-sat button{background:var(--panel);color:var(--fg);border:1.5px solid var(--line);border-radius:8px;min-height:34px;min-width:38px;padding:4px 8px}
+.sm-sat button:disabled{opacity:.4}
+.sm-sat span{min-width:9.5em;text-align:center;font-family:var(--mono);font-size:13px}
+.sm-wrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#smap{height:440px;background:#d9e1df}
+@media (max-width:600px){#smap{height:340px}}
+.sm-msg{position:absolute;left:10px;bottom:10px;z-index:500;background:rgba(15,29,33,.85);color:#eef4f2;font-size:13px;padding:5px 9px;border-radius:6px}
+.sm-msg:empty{display:none}
+.sm-key{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.sm-key[hidden]{display:none}
+.sm-key i{display:inline-block;width:14px;height:10px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.sm-key .u{font-style:italic}
+.leaflet-tooltip.sm-stn,.leaflet-tooltip.sm-town{background:rgba(255,255,255,.92);color:#14231f;border:0;box-shadow:0 1px 3px rgba(0,0,0,.35);font:600 12px/1.2 var(--body);padding:2px 6px}
+.leaflet-tooltip.sm-town{font-weight:500}
+.leaflet-tooltip.sm-stn::before,.leaflet-tooltip.sm-town::before{display:none}
+.leaflet-popup-content{font:13px/1.45 var(--body);color:#14231f}
 .snow-h{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
 #snowcard h2 + .snow-h{margin-top:4px}
 .snow-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
@@ -193,6 +211,18 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     </div>
     <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i style="background:var(--act)"></i><b id="avgKey" style="font-weight:400">Last 5 seasons average</b></span><span><i class="dash"></i>Normal (median)</span></div>
     <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in March, about a month before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings, smoothed over a week (NRCS doesn't publish one for depth). The gold line averages the last five complete seasons day by day (depth smoothed over a week too), so you can compare recent winters with the long-term normal.</p>
+  </section>
+
+  <section class="card" id="snowmap">
+    <h2>Where the snow is</h2>
+    <div class="sm-bar">
+      <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button></div>
+      <div class="sm-sat" id="smSatBar" hidden><button type="button" id="smPrev" aria-label="Previous day">◀</button><span id="smDay">…</span><button type="button" id="smNext" aria-label="Next day">▶</button></div>
+    </div>
+    <div class="sm-wrap"><div id="smap" aria-label="Map of snow around Pagosa Springs and Wolf Creek Pass"></div><div class="sm-msg" id="smMsg"></div></div>
+    <div class="sm-key" id="smKey"></div>
+    <p class="cap"><span id="smStn"></span> <span id="smNoaaTime"></span></p>
+    <p class="cap">Snow depth is NOAA's daily national snow analysis (about 1 km detail), which blends station, satellite and airborne measurements with a snow model, so it's an estimate, especially in steep terrain. The satellite photo is NASA's true-colour image from that day's morning pass: snow is white, but so are clouds, and on stormy days clouds hide the ground. Use ◀ ▶ to find a clear day.</p>
   </section>
 
   <section class="card" id="floodmap">
@@ -1211,6 +1241,141 @@ function renderSnow() {
   const dPk = dNorm.reduce((m, p) => (p[1] > m[1] ? p : m), dNorm[0]);
   seasonChart($('depth'), y0, cur(dp.cur), prev(dp.prev), dNorm, dPk, 0, smooth(avgPts(dp.avg)));
 }
+
+// ---------- snow map: NOAA NOHRSC snow depth or NASA satellite photo over USGS topo, with nearby SNOTEL stations ----------
+// Leaflet and the map tiles only load when the card scrolls near the screen.
+const SM = (() => {
+  const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs (NRCS station list, Nov 2026)
+    ['874:CO:SNTL', 'Wolf Creek Summit', 10930, 37.47903, -106.80234, 'top'], ['840:CO:SNTL', 'Upper San Juan', 10140, 37.48563, -106.83528, 'left'],
+    ['1325:CO:SNTL', 'Elwood Pass', 11680, 37.40563, -106.64136], ['624:CO:SNTL', 'Middle Creek', 11260, 37.61779, -107.03932],
+    ['1160:CO:SNTL', 'Weminuche Creek', 10730, 37.51968, -107.32139], ['580:CO:SNTL', 'Lily Pond', 11070, 37.38028, -106.54823],
+    ['1058:CO:SNTL', 'Grayback', 11620, 37.47051, -106.5379], ['394:NM:SNTL', 'Chamita', 8360, 36.95606, -106.65723],
+    ['843:CO:SNTL', 'Vallecito', 10740, 37.48524, -107.50748], ['839:CO:SNTL', 'Upper Rio Grande', 9370, 37.72172, -107.25971],
+    ['431:CO:SNTL', 'Cumbres Trestle', 10030, 37.01877, -106.45275], ['797:CO:SNTL', 'Stump Lakes', 11230, 37.47647, -107.63348, 'left']
+  ];
+  const NOAA = 'https://mapservices.weather.noaa.gov/raster/rest/services/snow/NOHRSC_Snow_Analysis/MapServer';
+  const SAT = ['MODIS_Terra_CorrectedReflectance_TrueColor', 'VIIRS_NOAA20_CorrectedReflectance_TrueColor'];
+  const gibs = (layer, day) => 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' + layer + '/default/' + day + '/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg';
+  const DEPTH_KEY = [['1–2', '#abc1bf'], ['2–4', '#66c1c4'], ['4–10', '#63a9cb'], ['10–20', '#5079c8'], ['20–39', '#3c3fc2'], ['39–59', '#5720c3'], ['59–98', '#7d01bb'], ['98+', '#b404b1']];
+  const isoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: DEN }).format(t);
+  const dayLabel = iso => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.parse(iso + 'T12:00:00Z'));
+  let map = null, noaaLayer = null, satLayer = null, mode = 'depth', satDay = null, satLayerName = SAT[0], started = false;
+
+  const loadCss = href => new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res; document.head.append(l); });
+  const loadJs = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('couldn’t load the map library')); document.head.append(s); });
+  const msg = t => { $('smMsg').textContent = t; };
+
+  // A satellite day counts as available when its centre tile isn't the tiny blank GIBS returns before the pass is processed.
+  async function satAvailable(layer, day) {
+    try { const r = await fetch(gibs(layer, day).replace('{z}/{y}/{x}', '9/197/100'), { cache: 'no-store' }); return r.ok && (await r.blob()).size > 2500; } catch (e) { return false; }
+  }
+  async function pickSatDay(start, dir) {   // walk from `start` in direction dir (-1 back) up to 10 days to the nearest clear-of-blank day
+    for (let i = 0; i < 10; i++) {
+      const d = isoDay(Date.parse(start + 'T12:00:00Z') + dir * i * 864e5);
+      if (d > isoDay(Date.now())) break;
+      for (const L of SAT) if (await satAvailable(L, d)) return { day: d, layer: L };
+    }
+    return null;
+  }
+
+  async function start() {
+    if (started) return; started = true;
+    msg('Loading map…');
+    try {
+      await Promise.all([loadCss('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'), loadJs('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js')]);
+    } catch (e) { msg('Map unavailable: ' + e.message + '.'); return; }
+    map = L.map('smap', { scrollWheelZoom: false, zoomSnap: 0.5, attributionControl: true }).setView([37.36, -106.98], window.innerWidth < 600 ? 8.5 : 9);
+    map.attributionControl.setPrefix(false);
+    L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 13, minZoom: 7, attribution: 'USGS The National Map' }).addTo(map);
+    const Noaa = L.TileLayer.extend({ getTileUrl(c) {
+      const ts = this.getTileSize(), P = p => L.CRS.EPSG3857.project(this._map.unproject(p, c.z));
+      const a = P([c.x * ts.x, c.y * ts.y]), b = P([(c.x + 1) * ts.x, (c.y + 1) * ts.y]);
+      return NOAA + '/export?bbox=' + [a.x, b.y, b.x, a.y].map(v => v.toFixed(1)).join(',') + '&bboxSR=3857&imageSR=3857&size=256,256&format=png32&transparent=true&layers=show:0&f=image';
+    } });
+    noaaLayer = new Noaa('', { opacity: 0.72, maxZoom: 13, attribution: 'NOAA NOHRSC snow analysis' });
+    // town + pass labels
+    for (const [n, la, lo] of [['Pagosa Springs', 37.2694, -107.0098]])   // Wolf Creek Summit station marks the pass
+      L.circleMarker([la, lo], { radius: 4, color: '#14231f', weight: 1.5, fillColor: '#ffffff', fillOpacity: 1 }).addTo(map).bindTooltip(n, { permanent: true, direction: 'left', className: 'sm-town', offset: [-6, 0] });
+    setMode(mode);
+    loadStations();
+    loadNoaaTime();
+    // satellite day: today if processed, else the latest earlier day
+    pickSatDay(isoDay(Date.now()), -1).then(p => { if (p) { satDay = p.day; satLayerName = p.layer; } else satDay = isoDay(Date.now() - 864e5); if (mode === 'sat') setMode('sat'); renderSatBar(); });
+  }
+
+  async function loadNoaaTime() {
+    try {
+      const j = JSON.parse(await getText(NOAA + '/2/query?where=1%3D1&outFields=idp_validtime&returnGeometry=false&f=json'));
+      const t = j.features && j.features[0] && j.features[0].attributes.idp_validtime;
+      if (t) { $('smNoaaTime').textContent = 'NOAA analysis valid ' + fmtTime.format(t) + '.'; }
+    } catch (e) { $('smNoaaTime').textContent = ''; }
+  }
+
+  async function loadStations() {
+    const end = isoDay(Date.now()), begin = isoDay(Date.now() - 6 * 864e5);
+    try {
+      const j = JSON.parse(await getText('https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=' + STATIONS.map(s => s[0]).join(',') + '&elements=WTEQ,SNWD&duration=DAILY&beginDate=' + begin + '&endDate=' + end + '&centralTendencyType=MEDIAN'));
+      for (const [trip, name, elev, la, lo, dir] of STATIONS) {
+        const s = j.find(x => x.stationTriplet === trip); if (!s) continue;
+        const W = s.data.find(e => e.stationElement && e.stationElement.elementCode === 'WTEQ'), D = s.data.find(e => e.stationElement && e.stationElement.elementCode === 'SNWD');
+        const w = W && W.values.filter(v => typeof v.value === 'number').pop();
+        const d = D && D.values.filter(v => typeof v.value === 'number' && v.value >= 0).pop();
+        if (!w && !d) continue;
+        const lines = ['<b>' + name + '</b> · ' + elev.toLocaleString('en-US') + ' ft'];
+        if (w) {
+          lines.push('Water in the snow: <b>' + w.value.toFixed(1) + ' in</b> (' + dayLabel(w.date) + ')');
+          if (typeof w.median === 'number' && w.median >= 1) lines.push(Math.round(w.value / w.median * 100) + '% of normal (' + w.median.toFixed(1) + ' in)');
+          else if (typeof w.median === 'number') lines.push('Normal for the date: ' + w.median.toFixed(1) + ' in');
+          else lines.push('Station too new for an NRCS normal');
+        }
+        if (d) lines.push('Snow depth: <b>' + d.value + ' in</b>');
+        const label = (trip === '874:CO:SNTL' ? 'Wolf Creek Pass ' : '') + (w ? w.value.toFixed(1) + '″' : d.value + ' in deep');
+        L.circleMarker([la, lo], { radius: 6, color: '#14231f', weight: 2, fillColor: '#f6c344', fillOpacity: 1 }).addTo(map)
+          .bindTooltip(label, { permanent: true, direction: dir || 'right', className: 'sm-stn', offset: dir === 'left' ? [-6, 0] : dir === 'top' ? [0, -6] : [6, 0] })
+          .bindPopup(lines.join('<br>'));
+      }
+      $('smStn').textContent = 'Yellow dots: NRCS SNOTEL stations, labelled with inches of water in the snow. Tap one for depth and normal.';
+    } catch (e) { $('smStn').textContent = 'Station readings unavailable right now (' + (e.message || e) + ').'; }
+  }
+
+  function setMode(m) {
+    mode = m;
+    for (const b of document.querySelectorAll('#smModes button')) b.setAttribute('aria-pressed', String(b.dataset.m === m));
+    $('smKey').hidden = m !== 'depth'; $('smSatBar').hidden = m !== 'sat';
+    if (!map) return;
+    if (m === 'depth') { if (satLayer) map.removeLayer(satLayer); noaaLayer.addTo(map); msg(''); }
+    else {
+      map.removeLayer(noaaLayer);
+      if (satLayer) map.removeLayer(satLayer);
+      if (satDay) { satLayer = L.tileLayer(gibs(satLayerName, satDay), { maxNativeZoom: 9, maxZoom: 13, attribution: 'NASA GIBS / ' + (satLayerName.startsWith('MODIS') ? 'MODIS Terra' : 'VIIRS NOAA-20') }).addTo(map); msg(''); }
+      else msg('Finding the latest satellite pass…');
+    }
+    renderSatBar();
+  }
+  function renderSatBar() {
+    $('smDay').textContent = satDay ? dayLabel(satDay) : '…';
+    $('smNext').disabled = !satDay || satDay >= isoDay(Date.now());
+  }
+  async function stepDay(dir) {
+    if (!satDay) return;
+    const want = isoDay(Date.parse(satDay + 'T12:00:00Z') + dir * 864e5);
+    if (want > isoDay(Date.now())) return;
+    msg('Loading ' + dayLabel(want) + '…');
+    const p = await pickSatDay(want, dir);
+    if (p) { satDay = p.day; satLayerName = p.layer; setMode('sat'); } else msg('No satellite image found for that day.');
+  }
+
+  function init() {
+    $('smKey').innerHTML = DEPTH_KEY.map(([t, c]) => '<span><i style="background:' + c + '"></i>' + t + '</span>').join('') + '<span class="u">inches of snow</span>';
+    for (const b of document.querySelectorAll('#smModes button')) b.addEventListener('click', () => setMode(b.dataset.m));
+    $('smPrev').addEventListener('click', () => stepDay(-1)); $('smNext').addEventListener('click', () => stepDay(1));
+    setMode('depth');
+    if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)) { o.disconnect(); start(); } }, { rootMargin: '400px' }).observe($('snowmap'));
+    else start();
+  }
+  return { init };
+})();
+SM.init();
 
 function msToNext27(now) {
   const m = now.getMinutes() + now.getSeconds() / 60 + now.getMilliseconds() / 60000;
