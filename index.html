@@ -96,8 +96,8 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .snow-top .v{font-family:var(--display);font-weight:700;font-size:30px}
 .snow-top .v small{font-family:var(--body);font-weight:500;font-size:.45em;color:var(--muted);margin-left:4px}
 .snow-top .s{font-size:13.5px;color:var(--muted);min-width:0}
-.snow-top #snowD{flex-basis:100%;margin-top:-2px}
-.snow-top #snowD:empty{display:none}
+.snow-h{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
+#snowcard h2 + .snow-h{margin-top:4px}
 .snow-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
 .snow-key i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .snow-key i.dash{background:repeating-linear-gradient(90deg,var(--hist) 0 5px,transparent 5px 9px)}
@@ -183,10 +183,16 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 
   <section class="card" id="snowcard">
     <h2>Wolf Creek snowpack</h2>
-    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div><div class="s" id="snowD"></div></div>
+    <h3 class="snow-h">Water in the snow</h3>
+    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div></div>
     <svg id="snow" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow water equivalent this season, last season and the normal curve"></svg>
-    <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i class="dash"></i>Normal (median)</span></div>
-    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in early March, before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings (NRCS doesn't publish one for depth).</p>
+    <div id="depthBox" hidden>
+      <h3 class="snow-h">Snow depth</h3>
+      <div class="snow-top"><div class="v" id="depthV">–<small>in</small></div><div class="s" id="snowD"></div></div>
+      <svg id="depth" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow depth this season, last season and the normal curve"></svg>
+    </div>
+    <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i style="background:var(--act)"></i><b id="avgKey" style="font-weight:400">Last 5 seasons average</b></span><span><i class="dash"></i>Normal (median)</span></div>
+    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in March, about a month before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings, smoothed over a week (NRCS doesn't publish one for depth). The gold line averages the last five complete seasons day by day (depth smoothed over a week too), so you can compare recent winters with the long-term normal.</p>
   </section>
 
   <section class="card" id="floodmap">
@@ -1068,6 +1074,15 @@ const SNWD_MEDIAN = [
   [8,8,7,11,12,11,12,12,14,13,12,13,12,12,13,14,18,17,18,20,22,23,22,22,21,23,24,25,26,27],
   [26,29,29,30,29,27,30,30,34,33,33,33,34,33,37,40,39,38,39,39,39,40,41,41,45,44,46,47,46,45,47]
 ];
+const AVG_YEARS = 5;   // the "last 5 seasons" average line
+// Day-of-season average over the last AVG_YEARS complete seasons -> { "MM-DD": mean }, skipping days with < 3 seasons (e.g. Feb 29)
+function seasonAvg(values, cur0) {
+  const from = (+cur0.slice(0, 4) - AVG_YEARS) + '-10-01', by = {};
+  for (const p of values) if (typeof p.value === 'number' && p.value >= 0 && p.date >= from && p.date < cur0) (by[p.date.slice(5)] ||= []).push(p.value);
+  const out = {};
+  for (const k in by) if (by[k].length >= 3) out[k] = by[k].reduce((a, b) => a + b, 0) / by[k].length;
+  return out;
+}
 function parseSnotel(j, todayIso) {
   const els = (j && j[0] && j[0].data) || [];
   const W = els.find(e => e.stationElement && e.stationElement.elementCode === 'WTEQ') || els[0];
@@ -1092,10 +1107,12 @@ function parseSnotel(j, todayIso) {
     if (now) {
       const ly = dv.find(p => p.date === (+now.date.slice(0, 4) - 1) + now.date.slice(4));
       const m = +now.date.slice(5, 7), d = +now.date.slice(8, 10);
-      depth = { date: now.date, value: now.value, lastYr: ly ? ly.value : null, normal: SNWD_MEDIAN[m - 1][d - 1] };
+      depth = { date: now.date, value: now.value, lastYr: ly ? ly.value : null, normal: SNWD_MEDIAN[m - 1][d - 1], avg: seasonAvg(D.values, cur0),
+        cur: dv.filter(p => p.date >= cur0).map(p => [p.date, p.value]), prev: dv.filter(p => p.date >= prev0 && p.date < cur0).map(p => [p.date, p.value]) };
     }
   }
-  return { cur0, cur, prev, median, last, depth, lastMed: typeof lastMed === 'number' ? lastMed : null, lastYr: lastYr ? lastYr[1] : null,
+  const avgFrom = +cur0.slice(0, 4) - AVG_YEARS + 1;   // seasons are named by the year they end
+  return { cur0, cur, prev, median, last, depth, avg: seasonAvg(v, cur0), avgLabel: avgFrom + '–' + (avgFrom + AVG_YEARS - 1), lastMed: typeof lastMed === 'number' ? lastMed : null, lastYr: lastYr ? lastYr[1] : null,
     peak: tct.medianPeak || null, meltout: tct.medianMeltout || null };
 }
 
@@ -1106,7 +1123,7 @@ async function loadExtras() {
   const jobs = [
     getText(SRC_EXTRA.stats).then(t => { norm.stats = parseUsgsStats(t); delete norm.err.stats; }).catch(e => { norm.err.stats = e.message || String(e); }),
     getText(SRC_EXTRA.rating).then(t => { norm.rating = parseRating(t); delete norm.err.rating; }).catch(e => { norm.err.rating = e.message || String(e); }),
-    getText(SRC_EXTRA.snotel((+wyStart(todayIso).slice(0, 4) - 1) + '-10-01', todayIso))
+    getText(SRC_EXTRA.snotel((+wyStart(todayIso).slice(0, 4) - AVG_YEARS) + '-10-01', todayIso))
       .then(t => { norm.snow = parseSnotel(JSON.parse(t), todayIso); delete norm.err.snow; }).catch(e => { norm.err.snow = e.message || String(e); })
   ];
   await Promise.all(jobs);
@@ -1114,10 +1131,48 @@ async function loadExtras() {
 }
 
 // ---------- snowpack card ----------
+// One season chart (Oct 1 - Jul 31): this season, last season, normal curve and a marked normal peak.
+function seasonChart(svg, y0, cur, prev, normal, peak, unit, avg) {
+  const NS = 'http://www.w3.org/2000/svg'; svg.innerHTML = '';
+  const W = 900, H = 200, pl = 44, pr = 14, pt = 14, pb = 26;
+  const base = Date.UTC(y0, 9, 1), end = Date.UTC(y0 + 1, 6, 31);
+  const x = t => pl + (t - base) / (end - base) * (W - pl - pr);
+  avg = avg || [];
+  const top = Math.max(10, ...normal.map(p => p[1]), ...prev.map(p => p[1]), ...cur.map(p => p[1]), ...avg.map(p => p[1]));
+  const step = top > 50 ? 20 : 10, hi = Math.ceil(top * 1.12 / step) * step;   // headroom for the peak label
+  const y = v => pt + (hi - v) / hi * (H - pt - pb);
+  const el = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  for (let v = 0; v <= hi; v += step) {
+    el('line', { x1: pl, x2: W - pr, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 });
+    el('text', { x: pl - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = v;
+  }
+  for (let m = 0; m < 10; m++) {
+    const t = Date.UTC(y0, 9 + m, 1);
+    el('line', { x1: x(t), x2: x(t), y1: pt, y2: H - pb, stroke: 'var(--line)', 'stroke-width': 1 });
+    el('text', { x: x(t) + 4, y: H - 8, 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short' }).format(t);
+  }
+  const path = pts => pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  if (normal.length) {
+    el('path', { d: path(normal) + ` L${x(normal[normal.length - 1][0]).toFixed(1)} ${y(0)} L${x(normal[0][0]).toFixed(1)} ${y(0)} Z`, fill: 'var(--hist)', opacity: .14 });
+    el('path', { d: path(normal), fill: 'none', stroke: 'var(--hist)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' });
+  }
+  if (prev.length) el('path', { d: path(prev), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.25, opacity: .7 });
+  if (avg.length) el('path', { d: path(avg), fill: 'none', stroke: 'var(--act)', 'stroke-width': 1.75, 'stroke-linejoin': 'round' });
+  if (cur.length) {
+    el('path', { d: path(cur), fill: 'none', stroke: 'var(--water)', 'stroke-width': 2.75, 'stroke-linejoin': 'round' });
+    const L = cur[cur.length - 1];
+    el('circle', { cx: x(L[0]), cy: y(L[1]), r: 4.5, fill: 'var(--water)', stroke: 'var(--panel)', 'stroke-width': 2 });
+  }
+  if (peak) {
+    el('circle', { cx: x(peak[0]), cy: y(peak[1]), r: 3.5, fill: 'var(--hist)' });
+    el('text', { x: x(peak[0]), y: y(peak[1]) - 9, 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--hist)', 'font-family': 'var(--body)' }).textContent = 'Normal peak ' + (unit === 1 ? peak[1].toFixed(1) : Math.round(peak[1])) + ' in · ' + new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(peak[0]);
+  }
+}
+
 function renderSnow() {
-  const svg = $('snow'), NS = 'http://www.w3.org/2000/svg', S = norm.snow;
-  svg.innerHTML = '';
+  const S = norm.snow;
   if (!S || !S.last) {
+    $('snow').innerHTML = ''; $('depthBox').hidden = true;
     $('snowV').innerHTML = '–<small>in</small>';
     $('snowS').textContent = norm.err.snow ? 'Snowpack data unavailable right now (' + norm.err.snow + ').' : 'Loading…';
     return;
@@ -1130,45 +1185,30 @@ function renderSnow() {
   else if (md != null) bits.push('Normal for ' + day + ' is ' + md.toFixed(1) + ' in, too little for a percentage to mean much');
   if (S.lastYr != null) bits.push('last year on this date: ' + S.lastYr.toFixed(1) + ' in');
   $('snowS').textContent = bits.join(' · ');
-  const dp = S.depth;
-  $('snowD').textContent = dp ? 'Snow depth ' + dp.value + ' in on ' + fmtMon.format(Date.parse(dp.date + 'T12:00:00Z')) + ' · normal about ' + dp.normal + ' in' + (dp.lastYr != null ? ' · last year ' + dp.lastYr + ' in' : '') : '';
 
-  const W = 900, H = 200, pl = 44, pr = 14, pt = 14, pb = 26;
-  const y0 = +S.cur0.slice(0, 4), base = Date.UTC(y0, 9, 1), end = Date.UTC(y0 + 1, 6, 31);
-  const dayOf = iso => (Date.UTC(y0 + (+iso.slice(0, 2) >= 10 ? 0 : 1), +iso.slice(0, 2) - 1, +iso.slice(3, 5)));   // "MM-DD" -> this season
-  const x = t => pl + (t - base) / (end - base) * (W - pl - pr);
-  const medPts = Object.keys(S.median).map(k => [dayOf(k), S.median[k]]).filter(p => p[0] >= base && p[0] <= end).sort((a, b) => a[0] - b[0]);
-  const prevPts = S.prev.map(p => [dayOf(p[0].slice(5)), p[1]]).filter(p => p[0] <= end);
-  const curPts = S.cur.map(p => [Date.parse(p[0] + 'T00:00:00Z'), p[1]]);
-  const top = Math.max(10, ...medPts.map(p => p[1]), ...prevPts.map(p => p[1]), ...curPts.map(p => p[1]));
-  const hi = Math.ceil(top / 10) * 10;
-  const y = v => pt + (hi - v) / hi * (H - pt - pb);
-  const el = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
-  for (let v = 0; v <= hi; v += 10) {
-    el('line', { x1: pl, x2: W - pr, y1: y(v), y2: y(v), stroke: 'var(--line)', 'stroke-width': 1 });
-    el('text', { x: pl - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = v;
-  }
-  for (let m = 0; m < 10; m++) {
-    const t = Date.UTC(y0, 9 + m, 1);
-    el('line', { x1: x(t), x2: x(t), y1: pt, y2: H - pb, stroke: 'var(--line)', 'stroke-width': 1 });
-    el('text', { x: x(t) + 4, y: H - 8, 'font-size': 12, fill: 'var(--muted)', 'font-family': 'var(--mono)' }).textContent = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short' }).format(t);
-  }
-  const path = pts => pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
-  if (medPts.length) {
-    el('path', { d: path(medPts) + ` L${x(medPts[medPts.length - 1][0]).toFixed(1)} ${y(0)} L${x(medPts[0][0]).toFixed(1)} ${y(0)} Z`, fill: 'var(--hist)', opacity: .14 });
-    el('path', { d: path(medPts), fill: 'none', stroke: 'var(--hist)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' });
-  }
-  if (prevPts.length) el('path', { d: path(prevPts), fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.25, opacity: .7 });
-  if (curPts.length) {
-    el('path', { d: path(curPts), fill: 'none', stroke: 'var(--water)', 'stroke-width': 2.75, 'stroke-linejoin': 'round' });
-    const L = curPts[curPts.length - 1];
-    el('circle', { cx: x(L[0]), cy: y(L[1]), r: 4.5, fill: 'var(--water)', stroke: 'var(--panel)', 'stroke-width': 2 });
-  }
-  if (S.peak) {
-    const pk = [Date.UTC(y0 + 1, S.peak.month - 1, S.peak.day), S.peak.value];
-    el('circle', { cx: x(pk[0]), cy: y(pk[1]), r: 3.5, fill: 'var(--hist)' });
-    el('text', { x: x(pk[0]), y: y(pk[1]) - 9, 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--hist)', 'font-family': 'var(--body)' }).textContent = 'Normal peak ' + pk[1].toFixed(1) + ' in · ' + new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(pk[0]);
-  }
+  const y0 = +S.cur0.slice(0, 4), end = Date.UTC(y0 + 1, 6, 31);
+  const dayOf = md => Date.UTC(y0 + (+md.slice(0, 2) >= 10 ? 0 : 1), +md.slice(0, 2) - 1, +md.slice(3, 5));   // "MM-DD" -> this season
+  const cur = pts => pts.map(p => [Date.parse(p[0] + 'T00:00:00Z'), p[1]]);
+  const prev = pts => pts.map(p => [dayOf(p[0].slice(5)), p[1]]).filter(p => p[0] <= end);
+  const wNorm = Object.keys(S.median).map(k => [dayOf(k), S.median[k]]).filter(p => p[0] <= end).sort((a, b) => a[0] - b[0]);
+  const avgPts = o => Object.keys(o).map(k => [dayOf(k), o[k]]).filter(p => p[0] <= end).sort((a, b) => a[0] - b[0]);
+  const smooth = pts => pts.map((p, i) => { const w = pts.slice(Math.max(0, i - 3), i + 4); return [p[0], w.reduce((a, q) => a + q[1], 0) / w.length]; });
+  $('avgKey').textContent = 'Average of ' + S.avgLabel + ' seasons';
+  seasonChart($('snow'), y0, cur(S.cur), prev(S.prev), wNorm, S.peak ? [Date.UTC(y0 + 1, S.peak.month - 1, S.peak.day), S.peak.value] : null, 1, avgPts(S.avg));
+
+  const dp = S.depth;
+  $('depthBox').hidden = !dp;
+  if (!dp) return;
+  // daily medians jump around, so the normal is smoothed with a centred 7-day average (fewer days at the ends)
+  const raw = [];
+  for (let t = Date.UTC(y0, 9, 1); t <= end; t += 864e5) { const dt = new Date(t); raw.push([t, SNWD_MEDIAN[dt.getUTCMonth()][dt.getUTCDate() - 1]]); }
+  const dNorm = raw.map((p, i) => { const w = raw.slice(Math.max(0, i - 3), i + 4); return [p[0], w.reduce((a, q) => a + q[1], 0) / w.length]; });
+  const atDate = dNorm.find(p => p[0] === Date.parse(dp.date + 'T00:00:00Z'));
+  const nrm = atDate ? Math.round(atDate[1]) : dp.normal;
+  $('depthV').innerHTML = dp.value + '<small>in deep</small>';
+  $('snowD').textContent = 'on ' + fmtMon.format(Date.parse(dp.date + 'T12:00:00Z')) + ' · normal about ' + nrm + ' in' + (dp.lastYr != null ? ' · last year on this date: ' + dp.lastYr + ' in' : '');
+  const dPk = dNorm.reduce((m, p) => (p[1] > m[1] ? p : m), dNorm[0]);
+  seasonChart($('depth'), y0, cur(dp.cur), prev(dp.prev), dNorm, dPk, 0, smooth(avgPts(dp.avg)));
 }
 
 function msToNext27(now) {
