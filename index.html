@@ -97,7 +97,7 @@ button[disabled]{opacity:.5;cursor:progress}
 .sec-head h2{font-family:var(--display);font-weight:700;font-size:clamp(24px,4.5vw,32px);line-height:1.1;margin:0}
 .sec-head span{font-size:14px;color:var(--muted)}
 #sec-river{margin-top:4px}
-#sec-river,#sec-snow,#snowcard,#snowmap,#floodmap,#powder{scroll-margin-top:56px}
+#sec-river,#sec-snow,#snowcard,#snowmap,#floodmap,#powder,#avy{scroll-margin-top:56px}
 .official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
 .official a{color:inherit}
 .off-list{margin:6px 0;padding-left:20px;display:grid;gap:3px}
@@ -149,6 +149,16 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .leaflet-tooltip.sm-res::before{display:none}
 #smap.sm-near .leaflet-tooltip.sm-res{display:block}
 #smap.sm-far .leaflet-tooltip.sm-stn,#smap.sm-far .leaflet-tooltip.sm-town{display:none}
+#avyKey i{box-shadow:0 0 0 1px var(--muted)}
+.avy-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.avy-badge{min-width:150px;padding:12px 16px;border-radius:10px;font:700 22px/1.1 var(--display);text-align:center;background:var(--line)}
+.avy-badge span{display:block;font:600 12px/1.2 var(--mono);letter-spacing:.06em;opacity:.8;margin-bottom:2px}
+.avy-badge span::before{content:"LEVEL "}
+.avy-txt{flex:1 1 260px;font-size:14.5px}
+.avy-where{font-weight:600;margin-bottom:3px}
+.avy-warn{color:var(--mod);font-weight:700;margin-bottom:3px}
+.avy-link{margin:12px 0 0;font-weight:600}
+.avy-link a{color:var(--water)}
 .pb-lead{margin:-2px 0 10px}
 .pb-wrap{overflow-x:auto;margin-top:10px;border:1px solid var(--line);border-radius:10px}
 table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
@@ -248,7 +258,7 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
       <span class="off-asof">Phone numbers from Town and County notices, Nov 1, 2026. Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.</span>
     </div>
   </details>
-  <nav class="jump" aria-label="Sections"><a href="#sec-river">River</a><a href="#floodmap">Flood map</a><a href="#snowcard">Snowpack</a><a href="#snowmap">Snow map</a><a href="#powder">Powder board</a></nav>
+  <nav class="jump" aria-label="Sections"><a href="#sec-river">River</a><a href="#floodmap">Flood map</a><a href="#snowcard">Snowpack</a><a href="#snowmap">Snow map</a><a href="#avy">Avalanche</a><a href="#powder">Powder board</a></nav>
 
   <div class="sec-head" id="sec-river"><h2>The River</h2><span>San Juan at Pagosa Springs · live gauge, forecast and flood map</span></div>
   <div class="readout">
@@ -334,15 +344,26 @@ table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric
   <section class="card" id="snowmap">
     <h2>Where the snow is</h2>
     <div class="sm-bar">
-      <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button></div>
+      <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button><button type="button" data-m="avy" aria-pressed="false">Avalanche (CAIC)</button></div>
       <div class="fm-chips" id="smViews"><button type="button" data-v="local" aria-pressed="true">Pagosa area</button><button type="button" data-v="co" aria-pressed="false">All Colorado</button></div>
       <div class="fm-chips" id="smUnits"><button type="button" data-u="depth" aria-pressed="true">Show depth</button><button type="button" data-u="water" aria-pressed="false">Show water</button></div>
       <div class="sm-sat" id="smSatBar" hidden><button type="button" id="smPrev" aria-label="Previous day">◀</button><span id="smDay">…</span><button type="button" id="smNext" aria-label="Next day">▶</button></div>
     </div>
     <div class="sm-wrap"><div id="smap" aria-label="Map of snow around Pagosa Springs and Wolf Creek Pass"></div><div class="sm-msg" id="smMsg"></div></div>
     <div class="sm-key" id="smKey"></div>
+    <div class="sm-key" id="avyKey" hidden></div>
     <p class="cap"><span id="smStn"></span> <span id="smNoaaTime"></span></p>
     <p class="cap">Snow depth is NOAA's daily national snow analysis (about 1 km detail), which blends station, satellite and airborne measurements with a snow model, so it's an estimate, especially in steep terrain. The satellite photo is NASA's true-colour image from that day's morning pass: snow is white, but so are clouds, and on stormy days clouds hide the ground. Use ◀ ▶ to find a clear day.</p>
+  </section>
+
+  <section class="card" id="avy">
+    <h2>Avalanche danger</h2>
+    <div class="avy-top">
+      <div class="avy-badge" id="avyBadge">…</div>
+      <div class="avy-txt"><div class="avy-where" id="avyWhere">Wolf Creek Pass area</div><div class="avy-warn" id="avyWarn" hidden>CAIC has issued an avalanche warning.</div><div id="avyAdvice">Loads when you scroll here…</div></div>
+    </div>
+    <p class="avy-link"><a href="https://avalanche.state.co.us/" target="_blank" rel="noopener">Read the full CAIC forecast before going into avalanche terrain →</a></p>
+    <p class="cap"><span id="avyAsOf"></span> Rating and advice are the Colorado Avalanche Information Center's, shown exactly as published (relayed by avalanche.org); this page adds nothing to them. They are for the backcountry: ski areas control avalanches inside their own boundaries. Use the "Avalanche (CAIC)" button on the snow map to see the rest of Colorado.</p>
   </section>
 
   <section class="card" id="powder">
@@ -1343,6 +1364,77 @@ function renderSnow() {
 
 // ---------- snow map: NOAA NOHRSC snow depth or NASA satellite photo over USGS topo, with nearby SNOTEL stations ----------
 // Leaflet and the map tiles only load when the card scrolls near the screen.
+// ---------- avalanche danger: CAIC ratings as relayed by the national avalanche.org map feed ----------
+// CAIC merges neighbouring zones that share a rating, so the areas change day to day; each is described by the places inside it.
+const AVY = (() => {
+  const URL = 'https://api.avalanche.org/v2/public/products/map-layer/CAIC';
+  const LEVELS = [   // North American Public Avalanche Danger Scale
+    [1, 'Low', '#50b848', '#14231f'], [2, 'Moderate', '#fff200', '#14231f'], [3, 'Considerable', '#f7941e', '#14231f'],
+    [4, 'High', '#ed1c24', '#ffffff'], [5, 'Extreme', '#231f20', '#ffffff']
+  ];
+  const PLACES = [['Wolf Creek Pass', 37.48, -106.80], ['Silverton', 37.81, -107.66], ['Telluride', 37.94, -107.81], ['Ouray', 38.02, -107.67],
+    ['Crested Butte', 38.87, -106.99], ['Aspen', 39.19, -106.82], ['Monarch Pass', 38.50, -106.33], ['Cuchara', 37.38, -105.10],
+    ['Breckenridge', 39.48, -106.05], ['Leadville', 39.25, -106.29], ['Vail', 39.64, -106.37], ['Loveland Pass', 39.66, -105.88],
+    ['Berthoud Pass', 39.80, -105.78], ['Cameron Pass', 40.52, -105.89], ['Rabbit Ears Pass', 40.39, -106.61], ['Grand Mesa', 39.03, -108.03],
+    ['Independence Pass', 39.11, -106.56], ['Cumbres Pass', 37.02, -106.45], ['Purgatory', 37.63, -107.82], ['Red Mountain Pass', 37.90, -107.71]];
+  let p = null;
+  const rings = f => !f.geometry ? [] : f.geometry.type === 'Polygon' ? [f.geometry.coordinates[0]] : f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates.map(q => q[0]) : [];
+  function inRing(x, y, r) { let c = false; for (let i = 0, k = r.length - 1; i < r.length; k = i++) { const [xi, yi] = r[i], [xk, yk] = r[k]; if ((yi > y) !== (yk > y) && x < (xk - xi) * (y - yi) / (yk - yi) + xi) c = !c; } return c; }
+  const contains = (f, la, lo) => rings(f).some(r => inRing(lo, la, r));
+  const level = n => LEVELS.find(l => l[0] === n) || null;
+  // the feed's times have no zone marker
+  const when = s => s ? Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z') : NaN;
+  function load() {
+    if (!p) p = getText(URL).then(t => {
+      const j = JSON.parse(t);
+      for (const f of j.features || []) f.properties._places = PLACES.filter(([n, la, lo]) => contains(f, la, lo)).map(x => x[0]);
+      return j;
+    });
+    return p;
+  }
+  function popup(pr) {
+    const lv = level(pr.danger_level);
+    const lines = ['<b>' + (lv ? 'Danger: ' + lv[1] + ' (' + lv[0] + ' of 5)' : 'No rating') + '</b>'];
+    if (pr.warning && pr.warning.product) lines.push('<b style="color:#c0392b">Avalanche warning in effect</b>');
+    if (pr.travel_advice) lines.push(pr.travel_advice);
+    if (pr._places && pr._places.length) lines.push('<span style="color:#5b6d68">This area includes ' + pr._places.join(', ') + '</span>');
+    lines.push('<a href="' + (pr.link || 'https://avalanche.state.co.us/') + '" target="_blank" rel="noopener">Full CAIC forecast →</a>');
+    return lines.join('<br>');
+  }
+
+  async function renderCard() {
+    $('avyBadge').textContent = '…';
+    try {
+      const j = await load();
+      const f = (j.features || []).find(x => contains(x, 37.48, -106.80));
+      const pr = f && f.properties, lv = pr && !pr.off_season ? level(pr.danger_level) : null;
+      const b = $('avyBadge');
+      if (!lv) {
+        b.textContent = 'No rating'; b.style.background = 'var(--line)'; b.style.color = 'var(--fg)';
+        $('avyAdvice').textContent = 'CAIC has no rating for the Wolf Creek Pass area right now (early or late in the season they may not issue one). Check the CAIC site before heading out.';
+      } else {
+        b.innerHTML = '<span>' + lv[0] + '</span>' + lv[1]; b.style.background = lv[2]; b.style.color = lv[3];
+        $('avyAdvice').textContent = pr.travel_advice || '';
+      }
+      $('avyWarn').hidden = !(pr && pr.warning && pr.warning.product);
+      $('avyWhere').textContent = pr && pr._places.length ? 'Wolf Creek Pass area · the same rating covers ' + pr._places.filter(n => n !== 'Wolf Creek Pass').join(', ') : 'Wolf Creek Pass area';
+      const a = pr ? when(pr.start_date) : NaN, z = pr ? when(pr.end_date) : NaN;
+      // the feed's times carry no zone, so show only the forecast's day, which is the same whether they are UTC or Denver time
+      $('avyAsOf').textContent = isFinite(z) ? 'CAIC forecast for ' + new Intl.DateTimeFormat('en-US', { timeZone: DEN, weekday: 'short', month: 'short', day: 'numeric' }).format(z - 60e3) + '.' : '';
+    } catch (e) {
+      $('avyBadge').textContent = '–';
+      $('avyAdvice').textContent = 'Avalanche ratings unavailable right now (' + (e.message || e) + '). Check avalanche.state.co.us.';
+    }
+  }
+  function init() {
+    $('avyKey').innerHTML = LEVELS.map(l => '<span><i style="background:' + l[2] + '"></i>' + l[0] + ' ' + l[1] + '</span>').join('');
+    if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)) { o.disconnect(); renderCard(); } }, { rootMargin: '400px' }).observe($('avy'));
+    else renderCard();
+  }
+  return { load, popup, init, contains, level, when };
+})();
+AVY.init();
+
 const SM = (() => {
   const STATIONS = [   // SNOTEL sites within ~60 km of Pagosa Springs, plus the two by Purgatory (NRCS station list, Nov 2026)
     ['874:CO:SNTL', 'Wolf Creek Summit', 10930, 37.47903, -106.80234, 'top'], ['840:CO:SNTL', 'Upper San Juan', 10140, 37.48563, -106.83528, 'left'],
@@ -1376,7 +1468,7 @@ const SM = (() => {
   const DEPTH_KEY = [['1–2', '#abc1bf'], ['2–4', '#66c1c4'], ['4–10', '#63a9cb'], ['10–20', '#5079c8'], ['20–39', '#3c3fc2'], ['39–59', '#5720c3'], ['59–98', '#7d01bb'], ['98+', '#b404b1']];
   const isoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: DEN }).format(t);
   const dayLabel = iso => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.parse(iso + 'T12:00:00Z'));
-  let map = null, localBounds = null, unit = 'depth', stnLabels = [], noaaLayer = null, satLayer = null, mode = 'depth', satDay = null, satLayerName = SAT[0], started = false;
+  let map = null, avyLayer = null, localBounds = null, unit = 'depth', stnLabels = [], noaaLayer = null, satLayer = null, mode = 'depth', satDay = null, satLayerName = SAT[0], started = false;
 
   const loadCss = href => new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res; document.head.append(l); });
   const loadJs = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('couldn’t load the map library')); document.head.append(s); });
@@ -1485,9 +1577,19 @@ const SM = (() => {
   function setMode(m) {
     mode = m;
     for (const b of document.querySelectorAll('#smModes button')) b.setAttribute('aria-pressed', String(b.dataset.m === m));
-    $('smKey').hidden = m !== 'depth'; $('smSatBar').hidden = m !== 'sat';
+    $('smKey').hidden = m !== 'depth'; $('smSatBar').hidden = m !== 'sat'; $('avyKey').hidden = m !== 'avy';
     if (!map) return;
+    if (avyLayer && m !== 'avy') map.removeLayer(avyLayer);
     if (m === 'depth') { if (satLayer) map.removeLayer(satLayer); noaaLayer.addTo(map); msg(''); }
+    else if (m === 'avy') {
+      map.removeLayer(noaaLayer); if (satLayer) map.removeLayer(satLayer);
+      if (avyLayer) avyLayer.addTo(map);
+      else { msg('Loading avalanche ratings…'); AVY.load().then(j => {
+        avyLayer = L.geoJSON(j, { style: f => ({ color: '#333', weight: 1, fillColor: f.properties.off_season ? '#999' : (f.properties.color || '#999'), fillOpacity: .45 }), onEachFeature: (f, l) => l.bindPopup(AVY.popup(f.properties)), attribution: 'Avalanche danger: CAIC via avalanche.org' });
+        avyLayer.eachLayer(l => l.bringToBack && l.bringToBack());
+        if (mode === 'avy') avyLayer.addTo(map); msg('');
+      }).catch(e => msg('Avalanche ratings unavailable: ' + (e.message || e))); }
+    }
     else {
       map.removeLayer(noaaLayer);
       if (satLayer) map.removeLayer(satLayer);
