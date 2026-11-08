@@ -50,7 +50,7 @@
   --ok:#5fb27e; --act:#e0bc45; --minor:#f0954f; --mod:#ec6b52; --major:#d16a9c; --hist:#8aa6c4; --fc:#f08a5d;
   color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
-.wrap{max-width:980px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 16px}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:2px 0 0;text-wrap:balance}
@@ -69,6 +69,26 @@ button:hover{opacity:.88} button:focus-visible{outline:3px solid var(--accent);o
 button[disabled]{opacity:.5;cursor:progress}
 .mode{font-size:13px;color:var(--muted);min-width:0;flex:1 1 260px}
 .mode b{color:var(--fg);font-weight:600}
+.safety{border:1px solid var(--line);border-left:4px solid var(--muted);background:var(--panel);border-radius:10px;font-size:14px;line-height:1.5}
+.safety summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:9px 14px;cursor:pointer;list-style:none}
+.safety summary::-webkit-details-marker{display:none}
+.sf-flag{font:600 11.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid currentColor;border-radius:4px;padding:3px 6px}
+.sf-text{flex:1 1 220px;color:var(--muted)}
+.sf-text a{color:var(--fg);font-weight:700}
+.sf-more{font-size:13px;font-weight:600;color:var(--fg);white-space:nowrap}
+.sf-more::after{content:" ▸";display:inline-block;transition:transform .15s}
+.safety[open] .sf-more::after{transform:rotate(90deg)}
+.sf-body{padding:0 14px 12px;border-top:1px solid var(--line)}
+.sf-body p{margin:10px 0 4px}
+.sf-body a{color:inherit}
+.safety.alert{border-color:var(--mod);border-left-color:var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel))}
+.safety.alert .sf-flag{color:#fff;background:var(--mod);border-color:var(--mod)}
+.safety.alert .sf-text{color:var(--fg);font-weight:600}
+.jump{position:sticky;top:0;z-index:1000;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin:-8px 0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);scrollbar-width:none}
+.jump::-webkit-scrollbar{display:none}
+.jump a{flex:none;font-size:13.5px;font-weight:600;color:var(--fg);text-decoration:none;border:1.5px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px}
+.jump a:hover{border-color:var(--fg)}
+#sec-river,#snowcard,#snowmap,#floodmap,#powder{scroll-margin-top:56px}
 .official{border:2px solid var(--mod);background:color-mix(in srgb,var(--mod) 9%,var(--panel));border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
 .official a{color:inherit}
 .off-list{margin:6px 0;padding-left:20px;display:grid;gap:3px}
@@ -120,6 +140,27 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 .leaflet-tooltip.sm-res::before{display:none}
 #smap.sm-near .leaflet-tooltip.sm-res{display:block}
 #smap.sm-far .leaflet-tooltip.sm-stn,#smap.sm-far .leaflet-tooltip.sm-town{display:none}
+.pb-lead{margin:-2px 0 10px}
+.pb-wrap{overflow-x:auto;margin-top:10px;border:1px solid var(--line);border-radius:10px}
+table.pb{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.pb th{font:600 11.5px/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.pb th:nth-child(2){text-align:left}
+.pb th .pb-stn{text-transform:none;letter-spacing:0}
+.pb td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.pb tr:last-child td{border-bottom:0}
+.pb td.pb-name{text-align:left;font-weight:600;white-space:normal;min-width:9em}
+.pb .pb-stn{display:block;font:400 11.5px/1.3 var(--body);color:var(--muted)}
+.pb td.pb-rank{color:var(--muted);font-family:var(--mono);font-size:12px;width:2em}
+.pb td.pb-fc{color:var(--water);font-weight:700}
+.pb tr.pb-top td{background:color-mix(in srgb,var(--water) 10%,var(--panel))}
+.pb-dim{color:var(--muted)}
+.pb .sm{display:none}
+@media (max-width:600px){
+  .pb .lg{display:none} .pb .sm{display:inline}
+  .pb th,.pb td{padding:7px 5px} .pb th:first-child,.pb td.pb-rank{display:none}
+  .pb td.pb-name{min-width:0;padding-left:9px} table.pb{font-size:13.5px}
+}
+#pbSort{margin-top:2px}
 .snow-h{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
 #snowcard h2 + .snow-h{margin-top:4px}
 .snow-key{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted)}
@@ -162,17 +203,6 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
 </style>
 
 <div class="wrap">
-  <aside class="official" aria-label="Flood help and information">
-    <b>Unofficial page, built from public USGS and NWS data. Do not use it to decide whether to stay or leave.</b> Follow instructions from the Town of Pagosa Springs and Archuleta County.
-    <ul class="off-list">
-      <li><b>Emergency: call 911.</b></li>
-      <li><b>Help evacuating:</b> <a href="tel:+19707312160">970-731-2160</a></li>
-      <li><b>Archuleta County incident call center:</b> <a href="tel:+19705089928">970-508-9928</a> (8 a.m.–10 p.m.)</li>
-      <li><b>Alerts by text:</b> <span class="mono">81147</span> to <span class="mono">888777</span> (County) or <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town)</li>
-      <li><b>Town updates:</b> <a href="https://www.pagosasprings.co.gov/" target="_blank" rel="noopener">pagosasprings.co.gov</a> · <b>Official river forecast:</b> <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a></li>
-    </ul>
-    <span class="off-asof">Phone numbers from Town and County notices, Nov 1, 2026. Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.</span>
-  </aside>
   <header>
     <div>
       <div class="eyebrow">USGS 09342500 · NWS PSPC2 · Pagosa Springs, CO</div>
@@ -180,8 +210,23 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     </div>
     <span class="chip" id="chip" style="color:var(--muted)">Waiting for data</span>
   </header>
+  <details class="safety" id="safety">
+    <summary><span class="sf-flag" id="sfFlag">Unofficial</span><span class="sf-text"><span id="sfLead">Not for evacuation decisions.</span> Emergency: <a href="tel:911">911</a></span><span class="sf-more">Flood contacts</span></summary>
+    <div class="sf-body">
+      <p><b>Unofficial page, built from public USGS, NWS and NRCS data. Do not use it to decide whether to stay or leave.</b> Follow instructions from the Town of Pagosa Springs and Archuleta County.</p>
+      <ul class="off-list">
+      <li><b>Emergency: call 911.</b></li>
+      <li><b>Help evacuating:</b> <a href="tel:+19707312160">970-731-2160</a></li>
+      <li><b>Archuleta County incident call center:</b> <a href="tel:+19705089928">970-508-9928</a> (8 a.m.–10 p.m.)</li>
+      <li><b>Alerts by text:</b> <span class="mono">81147</span> to <span class="mono">888777</span> (County) or <span class="mono">PagosaSprings</span> to <span class="mono">38276</span> (Town)</li>
+      <li><b>Town updates:</b> <a href="https://www.pagosasprings.co.gov/" target="_blank" rel="noopener">pagosasprings.co.gov</a> · <b>Official river forecast:</b> <a href="https://water.noaa.gov/gauges/PSPC2" target="_blank" rel="noopener">water.noaa.gov/gauges/PSPC2</a></li>
+    </ul>
+      <span class="off-asof">Phone numbers from Town and County notices, Nov 1, 2026. Readings can lag or stop during a flood (this gauge went offline for 4½ hours at the Oct 23 crest), and forecasts change.</span>
+    </div>
+  </details>
+  <nav class="jump" aria-label="Sections"><a href="#sec-river">River</a><a href="#floodmap">Flood map</a><a href="#snowcard">Snowpack</a><a href="#snowmap">Snow map</a><a href="#powder">Powder board</a></nav>
 
-  <div class="readout">
+  <div class="readout" id="sec-river">
     <div class="stat"><div class="k">Gauge height</div><div class="v" id="vStage">–<small>ft</small></div><div class="s" id="sStage">&nbsp;</div></div>
     <div class="stat"><div class="k">Flow</div><div class="v" id="vFlow">–<small>cfs</small></div><div class="s" id="sFlow">&nbsp;</div></div>
     <div class="stat time"><div class="k">Reading taken</div><div class="v" id="vTime">–</div><div class="s" id="sTime">&nbsp;</div></div>
@@ -191,7 +236,7 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     <button id="refresh" type="button">Refresh</button>
     <div class="mode" id="mode">Starting up…</div>
     <div class="fb" id="fb" role="status"></div>
-    <div class="cadence" id="cadence">The gauge sends new readings once an hour, four 15-minute readings at a time. They usually arrive about 25 minutes past the hour, occasionally later.</div>
+    <div class="cadence" id="cadence">New readings arrive about 25 minutes past each hour.</div>
   </div>
   <div class="errs" id="errs"></div>
 
@@ -203,34 +248,6 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
     <h2>Last 14 days</h2>
     <svg id="spark" viewBox="0 0 900 220" role="img" aria-label="Gauge height over the last 14 days, with the NWS forecast"></svg>
     <p class="cap" id="bandCap"></p>
-  </section>
-
-  <section class="card" id="snowcard">
-    <h2>Wolf Creek snowpack</h2>
-    <h3 class="snow-h">Water in the snow</h3>
-    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div></div>
-    <svg id="snow" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow water equivalent this season, last season and the normal curve"></svg>
-    <div id="depthBox" hidden>
-      <h3 class="snow-h">Snow depth</h3>
-      <div class="snow-top"><div class="v" id="depthV">–<small>in</small></div><div class="s" id="snowD"></div></div>
-      <svg id="depth" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow depth this season, last season and the normal curve"></svg>
-    </div>
-    <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i style="background:var(--act)"></i><b id="avgKey" style="font-weight:400">Last 5 seasons average</b></span><span><i class="dash"></i>Normal (median)</span></div>
-    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in March, about a month before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings, smoothed over a week (NRCS doesn't publish one for depth). The gold line averages the last five complete seasons day by day (depth smoothed over a week too), so you can compare recent winters with the long-term normal.</p>
-  </section>
-
-  <section class="card" id="snowmap">
-    <h2>Where the snow is</h2>
-    <div class="sm-bar">
-      <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button></div>
-      <div class="fm-chips" id="smViews"><button type="button" data-v="local" aria-pressed="true">Pagosa area</button><button type="button" data-v="co" aria-pressed="false">All Colorado</button></div>
-      <div class="fm-chips" id="smUnits"><button type="button" data-u="depth" aria-pressed="true">Show depth</button><button type="button" data-u="water" aria-pressed="false">Show water</button></div>
-      <div class="sm-sat" id="smSatBar" hidden><button type="button" id="smPrev" aria-label="Previous day">◀</button><span id="smDay">…</span><button type="button" id="smNext" aria-label="Next day">▶</button></div>
-    </div>
-    <div class="sm-wrap"><div id="smap" aria-label="Map of snow around Pagosa Springs and Wolf Creek Pass"></div><div class="sm-msg" id="smMsg"></div></div>
-    <div class="sm-key" id="smKey"></div>
-    <p class="cap"><span id="smStn"></span> <span id="smNoaaTime"></span></p>
-    <p class="cap">Snow depth is NOAA's daily national snow analysis (about 1 km detail), which blends station, satellite and airborne measurements with a snow model, so it's an estimate, especially in steep terrain. The satellite photo is NASA's true-colour image from that day's morning pass: snow is white, but so are clouds, and on stormy days clouds hide the ground. Use ◀ ▶ to find a clear day.</p>
   </section>
 
   <section class="card" id="floodmap">
@@ -273,6 +290,47 @@ section h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0 0 
       <li>Above about 18 ft these are what-ifs beyond anything recorded. Read them as the ground that sits that high above the river, not as a forecast: at those levels side creeks, bridges and the valley shape matter more than this model allows.</li>
     </ul>
   </section>
+
+  <section class="card" id="snowcard">
+    <h2>Wolf Creek snowpack</h2>
+    <h3 class="snow-h">Water in the snow</h3>
+    <div class="snow-top"><div class="v" id="snowV">–<small>in</small></div><div class="s" id="snowS">Loading…</div></div>
+    <svg id="snow" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow water equivalent this season, last season and the normal curve"></svg>
+    <div id="depthBox" hidden>
+      <h3 class="snow-h">Snow depth</h3>
+      <div class="snow-top"><div class="v" id="depthV">–<small>in</small></div><div class="s" id="snowD"></div></div>
+      <svg id="depth" viewBox="0 0 900 200" role="img" aria-label="Wolf Creek Summit snow depth this season, last season and the normal curve"></svg>
+    </div>
+    <div class="snow-key"><span><i style="background:var(--water)"></i>This season</span><span><i style="background:var(--muted)"></i>Last season</span><span><i style="background:var(--act)"></i><b id="avgKey" style="font-weight:400">Last 5 seasons average</b></span><span><i class="dash"></i>Normal (median)</span></div>
+    <p class="cap">Inches of water the snowpack would make if it all melted, measured daily at the NRCS SNOTEL station on Wolf Creek Summit (10,930 ft), in the San Juan's headwaters above Pagosa. It usually peaks in late April and is gone by late June. Spring runoff through town tracks how much is up there. Early in the season the percentage swings a lot: one storm can double it. Snow depth is how deep it is on the ground; it normally peaks in March, about a month before the water does, because the pack settles and gets denser. Its normal is our own median of the station's 1998–2026 daily readings, smoothed over a week (NRCS doesn't publish one for depth). The gold line averages the last five complete seasons day by day (depth smoothed over a week too), so you can compare recent winters with the long-term normal.</p>
+  </section>
+
+  <section class="card" id="snowmap">
+    <h2>Where the snow is</h2>
+    <div class="sm-bar">
+      <div class="fm-chips" id="smModes"><button type="button" data-m="depth" aria-pressed="true">Snow depth (NOAA)</button><button type="button" data-m="sat" aria-pressed="false">Satellite photo (NASA)</button></div>
+      <div class="fm-chips" id="smViews"><button type="button" data-v="local" aria-pressed="true">Pagosa area</button><button type="button" data-v="co" aria-pressed="false">All Colorado</button></div>
+      <div class="fm-chips" id="smUnits"><button type="button" data-u="depth" aria-pressed="true">Show depth</button><button type="button" data-u="water" aria-pressed="false">Show water</button></div>
+      <div class="sm-sat" id="smSatBar" hidden><button type="button" id="smPrev" aria-label="Previous day">◀</button><span id="smDay">…</span><button type="button" id="smNext" aria-label="Next day">▶</button></div>
+    </div>
+    <div class="sm-wrap"><div id="smap" aria-label="Map of snow around Pagosa Springs and Wolf Creek Pass"></div><div class="sm-msg" id="smMsg"></div></div>
+    <div class="sm-key" id="smKey"></div>
+    <p class="cap"><span id="smStn"></span> <span id="smNoaaTime"></span></p>
+    <p class="cap">Snow depth is NOAA's daily national snow analysis (about 1 km detail), which blends station, satellite and airborne measurements with a snow model, so it's an estimate, especially in steep terrain. The satellite photo is NASA's true-colour image from that day's morning pass: snow is white, but so are clouds, and on stormy days clouds hide the ground. Use ◀ ▶ to find a clear day.</p>
+  </section>
+
+  <section class="card" id="powder">
+    <h2>Powder board</h2>
+    <p class="cap pb-lead">Colorado ski areas ranked by snow at the nearest SNOTEL station and the National Weather Service's snowfall forecast for the next 3 days. Tap a heading button to re-sort.</p>
+    <div class="fm-chips" id="pbSort"></div>
+    <div class="pb-wrap"><table class="pb">
+      <thead><tr><th class="pb-rank"></th><th>Ski area <span class="pb-stn">nearest SNOTEL station</span></th><th>Depth</th><th><span class="lg">New </span>24 h</th><th><span class="lg">New </span>3 d<span class="lg">ays</span></th><th><span class="lg">Forecast</span><span class="sm">Next</span> 3 d<span class="lg">ays</span></th></tr></thead>
+      <tbody id="pbBody"><tr><td colspan="6" class="pb-dim">Loads when you scroll here…</td></tr></tbody>
+    </table></div>
+    <p class="cap" id="pbMsg"></p>
+    <p class="cap"><span id="pbAsOf"></span> "New" is the rise in snow depth at the station, which undercounts a storm a little because fresh snow settles as it piles up; "settled" means the depth went down. Changes under 2″ show as 0″, since depth sensors wobble about an inch day to day. Station depth is natural snow in a forest clearing, not a resort's groomed base. Forecasts are for the resort's NWS grid square (about 2.5 km). Always check the resort's own snow report.</p>
+  </section>
+
 
   <div class="foot">
     <div class="byline">Created by Dave Tuggle</div>
@@ -417,6 +475,14 @@ function render() {
     qLines.push(...flowNormalLines(L.t, L.flow));
     $('sFlow').innerHTML = qLines.length ? qLines.join('<br>') : '&nbsp;';
     const c = n ? category(L.stage, cats) : null;
+    { // safety strip: quiet normally; red and open when the river is at action stage or forecast to reach it
+      const pk0 = n && n.forecast && n.forecast.peak, fc0 = pk0 && pk0.t > Date.now() ? category(pk0.stage, cats) : null;
+      const alert = !!(c || fc0), sf = $('safety');
+      sf.classList.toggle('alert', alert);
+      $('sfFlag').textContent = alert ? (c ? 'River high' : 'High water forecast') : 'Unofficial';
+      $('sfLead').textContent = alert ? 'Follow Town and County instructions, not this page.' : 'Not for evacuation decisions.';
+      if (alert && !sf.dataset.userSet) sf.open = true;
+    }
     const chip = $('chip');
     if (!n) { chip.textContent = 'Flood stages unavailable'; chip.style.color = 'var(--muted)'; }
     else {
@@ -438,14 +504,13 @@ function render() {
 function renderMode() {
   const el = $('mode');
   const parts = [];
-  if (mode === 'live') parts.push('<b>Live</b> · straight from USGS and NWS' + (snap && snap.usgs && snap.usgs.source === 'nws' ? ' (readings from NWS while USGS is down)' : ''));
+  if (mode === 'live') parts.push('<b>Live</b> from USGS and NWS' + (snap && snap.usgs && snap.usgs.source === 'nws' ? ' (readings from NWS while USGS is down)' : ''));
   else if (mode === 'none') parts.push('<b>No data yet</b>');
   else parts.push('Starting up…');
-  if (snap && snap.usgs) parts.push('readings fetched ' + ago(snap.usgs.fetchedAt));
-  if (snap && snap.nws) parts.push('NWS fetched ' + ago(snap.nws.fetchedAt));
+  if (snap && (snap.usgs || snap.nws)) parts.push('checked ' + ago(Math.max(snap.usgs ? snap.usgs.fetchedAt : 0, snap.nws ? snap.nws.fetchedAt : 0)));
   el.innerHTML = parts.join(' · ') + (modeNote ? '<br>' + modeNote : '');
   const next = new Date(Date.now() + msToNext27(new Date()));
-  $('cadence').textContent = 'The gauge sends new readings once an hour, four 15-minute readings at a time. They usually arrive about 25 minutes past the hour, occasionally later. This page checks automatically at ' + fmtClock.format(next).replace(/ M[SD]T$/, '') + '; refreshing before then usually won\u2019t find anything new.';
+  $('cadence').textContent = 'New readings arrive about 25 minutes past each hour. Next automatic check: ' + fmtClock.format(next).replace(/ M[SD]T$/, '') + '.';
   const b = $('refresh');
   b.disabled = busy;
   b.textContent = busy ? 'Fetching…' : 'Refresh';
@@ -1432,9 +1497,98 @@ const SM = (() => {
     if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)) { o.disconnect(); start(); } }, { rootMargin: '400px' }).observe($('snowmap'));
     else start();
   }
-  return { init };
+  return { init, resorts: RESORTS };
 })();
 SM.init();
+// ---------- powder board: Colorado ski areas ranked by SNOTEL snow depth, recent depth gain, and the NWS 3-day snowfall forecast ----------
+// Loads only when the card scrolls near the screen (25 NWS forecast grids + one SNOTEL request).
+const PB = (() => {
+  // NWS forecast grid square for each ski area (office/x,y from api.weather.gov/points, Nov 2026)
+  const GRID = {
+    'Arapahoe Basin': 'BOU/32,59', 'Aspen Highlands': 'GJT/155,101', 'Aspen Mountain': 'GJT/156,101', 'Beaver Creek': 'GJT/168,119', 'Breckenridge': 'BOU/24,53',
+    'Buttermilk': 'GJT/155,102', 'Copper Mountain': 'BOU/21,53', 'Crested Butte': 'GJT/151,89', 'Echo Mountain': 'BOU/44,60', 'Eldora': 'BOU/43,72',
+    'Granby Ranch': 'BOU/32,77', 'Keystone': 'BOU/30,56', 'Loveland': 'BOU/31,61', 'Monarch': 'PUB/35,81', 'Powderhorn': 'GJT/109,100',
+    'Purgatory': 'GJT/114,35', 'Silverton Mountain': 'GJT/121,46', 'Ski Cooper': 'GJT/175,108', 'Snowmass': 'GJT/152,102', 'Steamboat': 'GJT/163,159',
+    'Sunlight': 'GJT/139,113', 'Telluride': 'GJT/115,48', 'Vail': 'GJT/174,119', 'Winter Park': 'BOU/36,70', 'Wolf Creek': 'PUB/16,35'
+  };
+  const SORTS = [['depth', 'Deepest'], ['new24', 'New, 24 h'], ['new72', 'New, 3 days'], ['fc', 'Coming, 3 days']];
+  let rows = [], sortKey = 'depth', started = false, snotelDay = null, fcIssued = null;
+  const isoDay = t => new Intl.DateTimeFormat('en-CA', { timeZone: DEN }).format(t);
+  const dayLabel = iso => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(Date.parse(iso + 'T12:00:00Z'));
+  const addDays = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+
+  // ISO-8601 duration like PT6H, P1D, P1DT12H -> milliseconds
+  function durMs(d) { const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(d || ''); return m ? ((+m[1] || 0) * 24 * 36e5 + (+m[2] || 0) * 36e5 + (+m[3] || 0) * 6e4) : 0; }
+  // Sum NWS snowfallAmount (mm) over [from, to], pro-rating periods that straddle the window -> inches
+  function snowInches(sf, from, to) {
+    if (!sf || !Array.isArray(sf.values)) return null;
+    const mult = /mm$/.test(sf.uom || '') ? 1 / 25.4 : /cm$/.test(sf.uom || '') ? 1 / 2.54 : /m$/.test(sf.uom || '') ? 1000 / 25.4 : null;
+    if (mult == null) return null;
+    let tot = 0;
+    for (const v of sf.values) {
+      if (typeof v.value !== 'number') continue;
+      const [st, du] = String(v.validTime).split('/'), a = Date.parse(st), b = a + durMs(du);
+      if (!(b > a)) continue;
+      const ov = Math.max(0, Math.min(b, to) - Math.max(a, from));
+      tot += v.value * ov / (b - a);
+    }
+    return tot * mult;
+  }
+
+  async function load() {
+    if (started) return; started = true;
+    $('pbMsg').textContent = 'Loading snow readings and forecasts…';
+    const resorts = SM.resorts, trips = [...new Set(resorts.map(r => r[3]))];
+    const end = isoDay(Date.now()), begin = addDays(end, -6);
+    let j = [];
+    try { j = JSON.parse(await getText('https://wcc.sc.egov.usda.gov/awdbRestApi/services/v1/data?stationTriplets=' + trips.join(',') + '&elements=SNWD&duration=DAILY&beginDate=' + begin + '&endDate=' + end)); }
+    catch (e) { $('pbMsg').textContent = 'SNOTEL readings unavailable right now (' + (e.message || e) + ').'; }
+    const now = Date.now(), to = now + 72 * 36e5;
+    const fcs = await Promise.allSettled(resorts.map(r => getText('https://api.weather.gov/gridpoints/' + GRID[r[0]]).then(t => JSON.parse(t).properties)));
+    rows = resorts.map(([name, la, lo, trip, sname, km], i) => {
+      const s = j.find(x => x.stationTriplet === trip), D = s && s.data.find(e => e.stationElement && e.stationElement.elementCode === 'SNWD');
+      const vals = D ? D.values.filter(v => typeof v.value === 'number' && v.value >= 0) : [];
+      const last = vals[vals.length - 1], at = n => last && vals.find(v => v.date === addDays(last.date, -n));
+      const d1 = at(1), d3 = at(3);
+      const f = fcs[i].status === 'fulfilled' ? fcs[i].value : null;
+      if (f && f.updateTime && (!fcIssued || Date.parse(f.updateTime) < fcIssued)) fcIssued = Date.parse(f.updateTime);   // oldest of the forecasts used
+      if (last && (!snotelDay || last.date < snotelDay)) snotelDay = last.date;
+      return { name, sname, km, depth: last ? last.value : null, date: last ? last.date : null,
+        new24: last && d1 ? last.value - d1.value : null, new72: last && d3 ? last.value - d3.value : null,
+        fc: f ? snowInches(f.snowfallAmount, now, to) : null };
+    });
+    const nf = rows.filter(r => r.fc == null).length;
+    $('pbMsg').textContent = nf === rows.length ? 'NWS forecasts unavailable right now.' : '';
+    render();
+  }
+
+  const fmtNew = v => v == null ? '–' : v >= 2 ? '+' + Math.round(v) + '″' : v <= -2 ? '<span class="pb-dim">settled</span>' : '0″';   // depth sensors wobble ~1″ a day
+  const fmtFc = v => v == null ? '–' : v < 0.25 ? '0″' : v < 1 ? '<1″' : Math.round(v) + '″';
+  function render() {
+    for (const b of document.querySelectorAll('#pbSort button')) b.setAttribute('aria-pressed', String(b.dataset.k === sortKey));
+    const val = r => r[sortKey] == null ? -Infinity : r[sortKey];
+    const sorted = rows.slice().sort((a, b) => val(b) - val(a) || (b.depth || 0) - (a.depth || 0) || a.name.localeCompare(b.name));
+    const top = sorted.length && val(sorted[0]) > 0 ? sorted[0] : null;
+    $('pbBody').innerHTML = sorted.map((r, i) => '<tr' + (r === top ? ' class="pb-top"' : '') + '><td class="pb-rank">' + (i + 1) + '</td><td class="pb-name">' + r.name +
+      '<span class="pb-stn">' + r.sname + ' · ' + r.km + ' km' + (r.km > 15 ? ' <i>(far, rough guide)</i>' : '') + '</span></td>' +
+      '<td>' + (r.depth == null ? '–' : r.depth + '″') + '</td><td>' + fmtNew(r.new24) + '</td><td>' + fmtNew(r.new72) + '</td><td class="pb-fc">' + fmtFc(r.fc) + '</td></tr>').join('');
+    const bits = [];
+    if (snotelDay) bits.push('Depth from NRCS SNOTEL daily readings through ' + dayLabel(snotelDay));
+    if (fcIssued) bits.push('NWS forecast updated ' + fmtTime.format(fcIssued));
+    $('pbAsOf').textContent = bits.join(' · ') + (bits.length ? '.' : '');
+  }
+
+  function init() {
+    $('pbSort').innerHTML = SORTS.map(([k, t]) => '<button type="button" data-k="' + k + '" aria-pressed="false">' + t + '</button>').join('');
+    for (const b of document.querySelectorAll('#pbSort button')) b.addEventListener('click', () => { sortKey = b.dataset.k; render(); });
+    render();
+    if ('IntersectionObserver' in window) new IntersectionObserver((es, o) => { if (es.some(e => e.isIntersecting)) { o.disconnect(); load(); } }, { rootMargin: '400px' }).observe($('powder'));
+    else load();
+  }
+  return { init, _snowInches: snowInches, _durMs: durMs };
+})();
+PB.init();
+
 
 function msToNext27(now) {
   const m = now.getMinutes() + now.getSeconds() / 60 + now.getMilliseconds() / 60000;
@@ -1442,6 +1596,7 @@ function msToNext27(now) {
 }
 
 $('refresh').addEventListener('click', () => liveRefresh(true));
+$('safety').addEventListener('click', e => { if (e.target.closest('summary') && !e.target.closest('a')) $('safety').dataset.userSet = '1'; });
 
 (function boot() {
   render();
